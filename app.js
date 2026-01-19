@@ -369,7 +369,7 @@ function initCreatePage() {
     ABILITIES.forEach(ab => {
         $(`#score-${ab}`).addEventListener('input', e => {
             $(`#mod-${ab}`).textContent = formatMod(getModifier(parseInt(e.target.value) || 10));
-            updateHPHint();
+            updateHPField();
         });
     });
     $('#roll-abilities-btn').addEventListener('click', () => {
@@ -378,20 +378,27 @@ function initCreatePage() {
             $(`#score-${ab}`).value = s;
             $(`#mod-${ab}`).textContent = formatMod(getModifier(s));
         });
-        updateHPHint();
+        updateHPField();
     });
-    $('#char-class').addEventListener('change', updateHPHint);
-    $('#char-level').addEventListener('input', updateHPHint);
+    $('#char-class').addEventListener('change', updateHPField);
+    $('#char-level').addEventListener('input', updateHPField);
     $('#create-form').addEventListener('submit', handleCreate);
     $('#cancel-create-btn').addEventListener('click', () => showPage('home-page'));
     $('#create-back-btn').addEventListener('click', () => showPage('home-page'));
+    
+    // Initialize HP field on page load
+    updateHPField();
 }
 
-function updateHPHint() {
+function updateHPField() {
     const cls = $('#char-class').value;
     const lvl = parseInt($('#char-level').value) || 1;
     const conMod = getModifier(parseInt($('#score-con').value) || 10);
-    $('#hp-suggestion').textContent = `Suggested: ${calcHP(cls, lvl, conMod)}`;
+    const suggestedHP = calcHP(cls, lvl, conMod);
+    
+    // Update both the suggestion text and the actual input field
+    $('#hp-suggestion').textContent = `Suggested: ${suggestedHP}`;
+    $('#char-hp').value = suggestedHP;
 }
 
 async function handleCreate(e) {
@@ -448,6 +455,9 @@ async function handleCreate(e) {
 // Character Detail Page
 // ========================================
 async function openCharacter(id) {
+    // Clean up roster realtime when viewing a specific character
+    cleanupRosterRealtime();
+    
     showLoading();
     const { data, error } = await db.from('characters').select(`*, ability_scores (*), skills (*), saving_throws (*), inventory_items (*), weapons (*), spells (*), spell_slots (*), features_traits (*), currency (*), character_details (*)`).eq('id', id).single();
     if (error || !data) { console.error(error); hideLoading(); showPage('home-page'); return; }
@@ -525,6 +535,69 @@ function setupRealtime(id) {
             console.log('Realtime status:', status);
         }
     });
+}
+
+// ========================================
+// Roster Realtime Updates
+// ========================================
+let rosterRealtimeChannel = null;
+
+function setupRosterRealtime() {
+    // Remove any existing roster channel first
+    try {
+        if (rosterRealtimeChannel) {
+            db.removeChannel(rosterRealtimeChannel);
+            rosterRealtimeChannel = null;
+        }
+    } catch (e) {
+        console.warn('Error removing roster channel:', e);
+    }
+    
+    if (!currentSession) return;
+    
+    // Create channel for all characters in this game world
+    const channelName = `roster-updates-${currentSession.gameWorldId}`;
+    const channel = db.channel(channelName, {
+        config: {
+            broadcast: { self: false },
+            presence: { key: '' }
+        }
+    });
+    
+    rosterRealtimeChannel = channel;
+    
+    // Listen to characters table changes for this game world
+    channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'characters', filter: `game_world_id=eq.${currentSession.gameWorldId}` },
+        async (payload) => {
+            console.log('Roster character change:', payload);
+            // Reload characters when any character in this game world changes
+            await loadCharacters();
+        }
+    );
+    
+    // Subscribe to the channel
+    channel.subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+            console.log('Roster realtime subscription active');
+        } else if (status === 'CHANNEL_ERROR') {
+            console.warn('Roster realtime channel error:', err);
+        } else if (status === 'TIMED_OUT') {
+            console.warn('Roster realtime subscription timed out');
+        }
+    });
+}
+
+function cleanupRosterRealtime() {
+    try {
+        if (rosterRealtimeChannel) {
+            db.removeChannel(rosterRealtimeChannel);
+            rosterRealtimeChannel = null;
+        }
+    } catch (e) {
+        console.warn('Error removing roster channel:', e);
+    }
 }
 
 // Handle realtime updates by merging data locally when possible
@@ -644,9 +717,15 @@ function renderStatsTab() {
 
     $('#tab-stats').innerHTML = `
         <div class="hp-section">
-            <div class="hp-display">
-                <div><span class="hp-current">${c.current_hit_points}</span><span class="hp-max">/${c.hit_point_maximum}</span></div>
-                ${c.temporary_hit_points > 0 ? `<span class="hp-temp">+${c.temporary_hit_points} temp</span>` : ''}
+            <div class="hp-display-with-level">
+                <div class="hp-display">
+                    <div><span class="hp-current">${c.current_hit_points}</span><span class="hp-max">/${c.hit_point_maximum}</span></div>
+                    ${c.temporary_hit_points > 0 ? `<span class="hp-temp">+${c.temporary_hit_points} temp</span>` : ''}
+                </div>
+                <div class="level-display" onclick="openLevelEditor()">
+                    <div class="level-value">${c.level}</div>
+                    <div class="level-label">Level</div>
+                </div>
             </div>
             <div class="hp-bar-large"><div class="hp-bar-fill ${getHpClass(pct)}" style="width:${pct}%"></div></div>
             <div class="hp-controls">
@@ -790,6 +869,81 @@ window.toggleCondition = async function(condition) {
     // Database update
     await db.from('characters').update({ active_conditions: updated }).eq('id', currentCharacter.id);
 };
+
+// ========================================
+// Level Editor
+// ========================================
+window.openLevelEditor = function() {
+    const modal = $('#level-modal');
+    $('#new-level').value = currentCharacter.level;
+    modal.classList.remove('hidden');
+};
+
+window.closeLevelModal = function() {
+    $('#level-modal').classList.add('hidden');
+};
+
+async function handleLevelUpdate(e) {
+    e.preventDefault();
+    
+    const newLevel = parseInt($('#new-level').value);
+    if (!newLevel || newLevel < 1 || newLevel > 20) {
+        alert('Please enter a valid level between 1 and 20');
+        return;
+    }
+    
+    if (newLevel === currentCharacter.level) {
+        closeLevelModal();
+        return;
+    }
+    
+    const c = currentCharacter;
+    const oldLevel = c.level;
+    const cls = c.class;
+    const hd = HIT_DICE[cls] || 8;
+    const conMod = getModifier(getAbilityScore(c.ability_scores, 'con'));
+    
+    // Calculate new proficiency bonus
+    const newProfBonus = getProfBonus(newLevel);
+    
+    // Calculate new hit dice
+    const newHitDiceTotal = `${newLevel}d${hd}`;
+    const newHitDiceRemaining = newLevel;
+    
+    // Calculate new max HP (optional - could keep current or recalculate)
+    // For leveling up, we'll add the average HP per level
+    let newMaxHP = c.hit_point_maximum;
+    if (newLevel > oldLevel) {
+        // Leveling up - add HP for each new level
+        const levelsGained = newLevel - oldLevel;
+        const hpPerLevel = Math.floor(hd / 2) + 1 + conMod;
+        newMaxHP += levelsGained * hpPerLevel;
+    } else {
+        // Leveling down - recalculate HP from scratch
+        newMaxHP = calcHP(cls, newLevel, conMod);
+    }
+    
+    // Ensure current HP doesn't exceed new max
+    const newCurrentHP = Math.min(c.current_hit_points, newMaxHP);
+    
+    // Update character
+    const updates = {
+        level: newLevel,
+        proficiency_bonus: newProfBonus,
+        hit_dice_total: newHitDiceTotal,
+        hit_dice_remaining: newHitDiceRemaining,
+        hit_point_maximum: newMaxHP,
+        current_hit_points: newCurrentHP
+    };
+    
+    // Optimistic update
+    Object.assign(currentCharacter, updates);
+    renderCharacterPage();
+    closeLevelModal();
+    
+    // Database update
+    await db.from('characters').update(updates).eq('id', currentCharacter.id);
+}
 
 // ========================================
 // Skills Tab
@@ -1426,7 +1580,10 @@ async function init() {
         }
         currentCharacter = null; 
         loadCharacters(); 
-        showPage('home-page'); 
+        showPage('home-page');
+        
+        // Restart roster realtime when going back to home
+        setupRosterRealtime();
     });
     
     // Logout button
@@ -1449,13 +1606,21 @@ async function init() {
     $('#add-item-form')?.addEventListener('submit', handleAddSubmit);
     $('#cancel-add-btn')?.addEventListener('click', closeAddModal);
     
+    // Level modal
+    $('#level-form')?.addEventListener('submit', handleLevelUpdate);
+    $('#cancel-level-btn')?.addEventListener('click', closeLevelModal);
+    
     // Fix modal backdrop click handlers
     $('#delete-modal .modal-backdrop')?.addEventListener('click', closeDeleteModal);
     $('#add-item-modal .modal-backdrop')?.addEventListener('click', closeAddModal);
+    $('#level-modal .modal-backdrop')?.addEventListener('click', closeLevelModal);
     
     // Load characters and hide loading
     await loadCharacters();
     hideLoading();
+    
+    // Set up roster realtime updates
+    setupRosterRealtime();
     
     // Restore page state from localStorage
     const savedPage = localStorage.getItem('dnd-current-page');

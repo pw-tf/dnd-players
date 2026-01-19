@@ -396,6 +396,25 @@
                 </form>
             </div>
         </div>
+
+        <!-- Level Editor Modal -->
+        <div id="level-modal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <h2>Level Up Character</h2>
+                <p>Changing the level will automatically update proficiency bonus and hit dice.</p>
+                <form id="level-form">
+                    <div class="form-group">
+                        <label>New Level (1-20)</label>
+                        <input type="number" id="new-level" min="1" max="20" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-level-btn" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Update Level</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

@@ -344,6 +344,10 @@
         .create-hint a:hover {
             text-decoration: underline;
         }
+
+        #pin-text{
+            padding-top: 5px;
+        }
         
         @keyframes slideIn {
             from {
@@ -712,6 +716,7 @@ body {
     font-size: 16px;
     font-weight: 600;
     margin-bottom: 2px;
+    font-family: Playfair Display, serif;
 }
 
 .card-info .card-subtitle {
@@ -788,7 +793,7 @@ body {
 /* Quick Stats */
 .quick-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));;
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--space-sm);
 }
 
@@ -1098,11 +1103,54 @@ body {
     margin-bottom: var(--space-md);
 }
 
-.hp-display {
+.hp-display-with-level {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
+    gap: var(--space-md);
     margin-bottom: var(--space-sm);
+}
+
+.hp-display {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.level-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-width: 64px;
+}
+
+.level-display:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-primary);
+}
+
+.level-value {
+    font-size: 24px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    line-height: 1;
+}
+
+.level-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 4px;
 }
 
 .hp-current {
@@ -1155,6 +1203,11 @@ body {
 
 .hp-btn:hover {
     background: var(--bg-hover);
+}
+
+
+#hp-delta {
+    width: 40px;
 }
 
 .hp-btn.damage {
@@ -1758,7 +1811,7 @@ body {
 ======================================== */
 .currency-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: var(--space-sm);
     margin-bottom: var(--space-lg);
 }
