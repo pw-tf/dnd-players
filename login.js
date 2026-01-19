@@ -194,24 +194,6 @@ function setupTabs() {
 }
 
 // ========================================
-// Role Selection
-// ========================================
-function setupRoleSelection() {
-    $$('.role-option').forEach(option => {
-        option.addEventListener('click', () => {
-            const form = option.closest('.login-form');
-            if (!form) return;
-            
-            // Update active role in current form
-            form.querySelectorAll('.role-option').forEach(opt => {
-                opt.classList.remove('active');
-            });
-            option.classList.add('active');
-        });
-    });
-}
-
-// ========================================
 // Remember Me Checkbox
 // ========================================
 function setupRememberMe() {
@@ -234,10 +216,6 @@ async function handleJoinSubmit(e) {
     
     const worldName = worldNameInput.value.trim();
     const pin = updateHiddenPIN('join');
-    const activeRole = $('#join-form .role-option.active');
-    if (!activeRole) return;
-    
-    const role = activeRole.dataset.role;
     const rememberMe = $('#remember-me');
     const remember = rememberMe ? rememberMe.classList.contains('checked') : false;
     
@@ -277,10 +255,14 @@ async function handleJoinSubmit(e) {
             return;
         }
         
-        // Verify PIN based on role
-        const correctPinHash = role === 'dm' ? gameWorld.dm_pin_hash : gameWorld.player_pin_hash;
-        if (pinHash !== correctPinHash) {
-            showError('join-error', 'Incorrect PIN for selected role');
+        // Auto-detect role based on PIN
+        let role = null;
+        if (pinHash === gameWorld.dm_pin_hash) {
+            role = 'dm';
+        } else if (pinHash === gameWorld.player_pin_hash) {
+            role = 'player';
+        } else {
+            showError('join-error', 'Incorrect PIN');
             return;
         }
         
@@ -438,7 +420,6 @@ function checkExistingSession() {
 function initLogin() {
     setupPINInputs();
     setupTabs();
-    setupRoleSelection();
     setupRememberMe();
     
     // Form submissions

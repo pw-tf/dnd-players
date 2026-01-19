@@ -4,7 +4,13 @@
 const SUPABASE_URL = 'https://zlsguyiwwwbyoqxdewsd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpsc2d1eWl3d3dieW9xeGRld3NkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MzU0NzMsImV4cCI6MjA4NDIxMTQ3M30.LNcqEHFvGobozl5oPNs_GYpduYBoNmM7n6IhbuInfb4';
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    realtime: {
+        params: {
+            eventsPerSecond: 10
+        }
+    }
+});
 
 
 // ========================================
@@ -454,14 +460,29 @@ async function openCharacter(id) {
 
 let realtimeRetryCount = 0;
 const MAX_REALTIME_RETRIES = 3;
+let currentRealtimeChannel = null;
 
 function setupRealtime(id) {
-    // Remove any existing channels first
-    db.removeAllChannels();
+    // Remove any existing channel first
+    try {
+        if (currentRealtimeChannel) {
+            db.removeChannel(currentRealtimeChannel);
+            currentRealtimeChannel = null;
+        }
+    } catch (e) {
+        console.warn('Error removing existing channel:', e);
+    }
     
     // Create a unique channel name
-    const channelName = `char-updates-${id}-${Date.now()}`;
-    const channel = db.channel(channelName);
+    const channelName = `char-updates-${id}`;
+    const channel = db.channel(channelName, {
+        config: {
+            broadcast: { self: false },
+            presence: { key: '' }
+        }
+    });
+    
+    currentRealtimeChannel = channel;
     
     // Listen to characters table
     channel.on(
@@ -487,22 +508,19 @@ function setupRealtime(id) {
         );
     });
     
-    // Subscribe to the channel
+    // Subscribe to the channel with better error handling
     channel.subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
             console.log('Realtime subscription active for character:', id);
             realtimeRetryCount = 0; // Reset on success
         } else if (status === 'CHANNEL_ERROR') {
-            console.error('Realtime channel error:', err);
-            // Don't retry on channel errors - they usually indicate a config issue
+            console.warn('Realtime channel error (continuing without live updates):', err);
+            // Don't retry on channel errors
         } else if (status === 'TIMED_OUT') {
-            realtimeRetryCount++;
-            if (realtimeRetryCount <= MAX_REALTIME_RETRIES) {
-                console.warn(`Realtime subscription timed out, retry ${realtimeRetryCount}/${MAX_REALTIME_RETRIES}...`);
-                setTimeout(() => setupRealtime(id), 2000 * realtimeRetryCount); // Exponential backoff
-            } else {
-                console.warn('Realtime subscription failed after max retries. App will work without live updates.');
-            }
+            console.warn('Realtime subscription timed out (continuing without live updates)');
+            // Don't retry timeouts to avoid connection spam
+        } else if (status === 'CLOSED') {
+            console.log('Realtime channel closed');
         } else {
             console.log('Realtime status:', status);
         }
@@ -1398,7 +1416,14 @@ async function init() {
     $('#create-btn')?.addEventListener('click', () => showPage('create-page'));
     $('#refresh-btn')?.addEventListener('click', loadCharacters);
     $('#char-back-btn')?.addEventListener('click', () => { 
-        db.removeAllChannels(); 
+        try {
+            if (currentRealtimeChannel) {
+                db.removeChannel(currentRealtimeChannel);
+                currentRealtimeChannel = null;
+            }
+        } catch (e) {
+            console.warn('Error removing channel on back:', e);
+        }
         currentCharacter = null; 
         loadCharacters(); 
         showPage('home-page'); 
