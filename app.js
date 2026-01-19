@@ -122,7 +122,6 @@ function clearSession() {
     currentSession = null;
 }
 
-// Update loadCharacters to filter by game world
 async function loadCharacters() {
     if (!currentSession) {
         console.error('No session when loading characters');
@@ -319,12 +318,6 @@ function formatWeaponFromApi(weapon, charAbilityScores, profBonus) {
 // ========================================
 // Home Page
 // ========================================
-async function loadCharacters() {
-    const { data, error } = await db.from('characters').select(`*, ability_scores (*), skills (*)`).order('updated_at', { ascending: false });
-    if (error) { console.error(error); return; }
-    characters = data || [];
-    renderRoster();
-}
 
 function renderRoster() {
     const roster = $('#party-roster');
