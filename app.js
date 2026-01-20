@@ -39,6 +39,24 @@ const CONDITIONS = ['Blinded', 'Charmed', 'Deafened', 'Frightened', 'Grappled', 
 const HIT_DICE = { Barbarian: 12, Fighter: 10, Paladin: 10, Ranger: 10, Bard: 8, Cleric: 8, Druid: 8, 
     Monk: 8, Rogue: 8, Warlock: 8, Sorcerer: 6, Wizard: 6, Artificer: 8 };
 
+// Special attacks that aren't in the API (e.g., Unarmed Strike)
+const SPECIAL_ATTACKS = [
+    {
+        name: 'Unarmed Strike',
+        damage: '1+STR',
+        damage_type: 'Bludgeoning',
+        properties: 'Melee',
+        description: 'Instead of using a weapon to make a melee weapon attack, you can use an unarmed strike: a punch, kick, head-butt, or similar forceful blow (none of which count as weapons). On a hit, an unarmed strike deals bludgeoning damage equal to 1 + your Strength modifier. You are proficient with your unarmed strikes.'
+    },
+    {
+        name: 'Improvised Weapon',
+        damage: '1d4+STR',
+        damage_type: 'Bludgeoning',
+        properties: 'Melee or Ranged (20/60)',
+        description: 'An improvised weapon includes any object you can wield in one or two hands, such as broken glass, a table leg, a frying pan, a wagon wheel, or a dead goblin.'
+    }
+];
+
 // ========================================
 // State
 // ========================================
@@ -233,6 +251,49 @@ async function searchDndApi(endpoint, query) {
     }
 }
 
+// Search multiple endpoints for features/traits/feats
+async function searchMultipleEndpoints(endpoints, query) {
+    if (!query || query.length < 2) return [];
+    
+    // Cancel previous request
+    if (currentSearchController) {
+        currentSearchController.abort();
+    }
+    currentSearchController = new AbortController();
+    
+    try {
+        // Search all endpoints in parallel
+        const searches = endpoints.map(async (endpoint) => {
+            const cacheKey = `${endpoint}:${query.toLowerCase()}`;
+            if (apiSearchCache[cacheKey]) {
+                return apiSearchCache[cacheKey].map(r => ({ ...r, _endpoint: endpoint }));
+            }
+            
+            try {
+                const response = await fetch(`${DND_API_BASE}/${endpoint}?name=${encodeURIComponent(query)}`, {
+                    signal: currentSearchController.signal
+                });
+                if (!response.ok) return [];
+                const data = await response.json();
+                const results = (data.results || []).map(r => ({ ...r, _endpoint: endpoint }));
+                apiSearchCache[cacheKey] = data.results || [];
+                return results;
+            } catch (e) {
+                if (e.name !== 'AbortError') console.error(`API search error for ${endpoint}:`, e);
+                return [];
+            }
+        });
+        
+        const allResults = await Promise.all(searches);
+        // Flatten and sort by name
+        return allResults.flat().sort((a, b) => a.name.localeCompare(b.name));
+    } catch (e) {
+        if (e.name === 'AbortError') return [];
+        console.error('Multi-endpoint search error:', e);
+        return [];
+    }
+}
+
 async function getDndApiDetails(url) {
     try {
         const response = await fetch(`https://www.dnd5eapi.co${url}`);
@@ -255,6 +316,7 @@ function formatSpellFromApi(spell) {
         components: spell.components?.join(', ') || '',
         duration: spell.duration || '',
         description: Array.isArray(spell.desc) ? spell.desc.join('\n\n') : (spell.desc || ''),
+        higher_level: Array.isArray(spell.higher_level) ? spell.higher_level.join('\n\n') : (spell.higher_level || ''),
         api_index: spell.index
     };
 }
@@ -319,6 +381,52 @@ function formatWeaponFromApi(weapon, charAbilityScores, profBonus) {
         damage_type: weapon.damage?.damage_type?.name || '',
         properties: props
     };
+}
+
+// Format feature/trait/feat from API with auto-source detection
+function formatFeatureFromApi(item, endpoint) {
+    const result = {
+        name: item.name,
+        description: Array.isArray(item.desc) ? item.desc.join('\n\n') : (item.desc || ''),
+        source: 'Other'
+    };
+    
+    // Auto-detect source based on endpoint and data
+    if (endpoint === 'features') {
+        // Class features
+        if (item.class) {
+            const className = item.class.name || item.class;
+            const level = item.level || '';
+            result.source = level ? `${className} ${level}` : className;
+        } else {
+            result.source = 'Class';
+        }
+    } else if (endpoint === 'traits') {
+        // Racial traits
+        if (item.races && item.races.length > 0) {
+            result.source = item.races.map(r => r.name).join(', ');
+        } else if (item.subraces && item.subraces.length > 0) {
+            result.source = item.subraces.map(r => r.name).join(', ');
+        } else {
+            result.source = 'Race';
+        }
+    } else if (endpoint === 'feats') {
+        result.source = 'Feat';
+        // Add prerequisites if available
+        if (item.prerequisites && item.prerequisites.length > 0) {
+            const prereqDesc = item.prerequisites.map(p => {
+                if (p.ability_score) return `${p.ability_score.name} ${p.minimum_score}+`;
+                if (p.proficiency) return `Proficiency: ${p.proficiency.name}`;
+                if (p.spell) return `Spell: ${p.spell.name}`;
+                return '';
+            }).filter(Boolean).join(', ');
+            if (prereqDesc) {
+                result.description = `Prerequisites: ${prereqDesc}\n\n${result.description}`;
+            }
+        }
+    }
+    
+    return result;
 }
 
 // ========================================
@@ -1012,13 +1120,13 @@ function renderActionsTab() {
                 <button class="add-btn" onclick="openAddModal('weapon')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add</button>
             </div>
             <div class="weapons-list">
-                ${weapons.length ? weapons.map(w => `<div class="weapon-card">
+                ${weapons.length ? weapons.map(w => `<div class="weapon-card clickable" onclick="showWeaponDetail('${w.id}')">
                     <div class="weapon-info"><h3>${escapeHtml(w.name)}</h3><p>${w.damage_type || ''} ${w.properties || ''}</p></div>
                     <div class="weapon-stats">
                         <div class="weapon-stat"><span class="value">${formatMod(w.attack_bonus)}</span><span class="label">Hit</span></div>
                         <div class="weapon-stat"><span class="value">${w.damage}</span><span class="label">Dmg</span></div>
                     </div>
-                    <button class="weapon-delete" onclick="deleteWeapon('${w.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+                    <button class="weapon-delete" onclick="event.stopPropagation(); deleteWeapon('${w.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
                 </div>`).join('') : '<div class="empty-list">No weapons added</div>'}
             </div>
         </div>
@@ -1044,13 +1152,13 @@ function renderActionsTab() {
                 ${Object.keys(groupedSpells).length ? Object.entries(groupedSpells).sort((a,b) => a[0] - b[0]).map(([lvl, list]) => `
                     <div class="spell-level-group">
                         <div class="spell-level-header">${lvl === '0' ? 'Cantrips' : `Level ${lvl}`}</div>
-                        ${list.map(s => `<div class="spell-card">
+                        ${list.map(s => `<div class="spell-card clickable" onclick="showSpellDetail('${s.id}')">
                             <div class="spell-info">
-                                ${s.level > 0 ? `<div class="spell-prepared-toggle ${s.prepared ? 'prepared' : ''}" onclick="toggleSpellPrepared('${s.id}', ${s.prepared})"></div>` : ''}
+                                ${s.level > 0 ? `<div class="spell-prepared-toggle ${s.prepared ? 'prepared' : ''}" onclick="event.stopPropagation(); toggleSpellPrepared('${s.id}', ${s.prepared})"></div>` : ''}
                                 <span class="spell-name">${escapeHtml(s.name)}</span>
                                 ${s.school ? `<span class="spell-school">${s.school}</span>` : ''}
                             </div>
-                            <button class="spell-delete" onclick="deleteSpell('${s.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+                            <button class="spell-delete" onclick="event.stopPropagation(); deleteSpell('${s.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
                         </div>`).join('')}
                     </div>
                 `).join('') : '<div class="empty-list">No spells added</div>'}
@@ -1122,14 +1230,14 @@ function renderInventoryTab() {
             <button class="add-btn" onclick="openAddModal('item')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add</button>
         </div>
         <div class="items-list">
-            ${items.length ? items.map(i => `<div class="item-card">
+            ${items.length ? items.map(i => `<div class="item-card clickable" onclick="showItemDetail('${i.id}')">
                 <div class="item-info"><h3>${escapeHtml(i.name)}</h3><p>${i.item_type || 'Item'}${i.weight ? ` • ${i.weight} lb` : ''}</p></div>
                 <div class="item-quantity">
-                    <button onclick="updateItemQty('${i.id}', ${i.quantity - 1})">−</button>
+                    <button onclick="event.stopPropagation(); updateItemQty('${i.id}', ${i.quantity - 1})">−</button>
                     <span>${i.quantity}</span>
-                    <button onclick="updateItemQty('${i.id}', ${i.quantity + 1})">+</button>
+                    <button onclick="event.stopPropagation(); updateItemQty('${i.id}', ${i.quantity + 1})">+</button>
                 </div>
-                <button class="item-delete" onclick="deleteItem('${i.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+                <button class="item-delete" onclick="event.stopPropagation(); deleteItem('${i.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
             </div>`).join('') : '<div class="empty-list">No items added</div>'}
         </div>
     `;
@@ -1183,12 +1291,12 @@ function renderNotesTab() {
                 <button class="add-btn" onclick="openAddModal('feature')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add</button>
             </div>
             <div class="features-list">
-                ${features.length ? features.map(f => `<div class="feature-card">
+                ${features.length ? features.map(f => `<div class="feature-card clickable" onclick="showFeatureDetail('${f.id}')">
                     <div class="feature-header">
-                        <div><h4>${escapeHtml(f.name)}</h4>${f.source ? `<span class="feature-source">${f.source}</span>` : ''}</div>
-                        <button class="feature-delete" onclick="deleteFeature('${f.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
+                        <div><h4>${escapeHtml(f.name)}</h4>${f.source ? `<span class="feature-source">${escapeHtml(f.source)}</span>` : ''}</div>
+                        <button class="feature-delete" onclick="event.stopPropagation(); deleteFeature('${f.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg></button>
                     </div>
-                    ${f.description ? `<p class="feature-description">${escapeHtml(f.description)}</p>` : ''}
+                    ${f.description ? `<p class="feature-description">${escapeHtml(f.description).substring(0, 150)}${f.description.length > 150 ? '...' : ''}</p>` : ''}
                 </div>`).join('') : '<div class="empty-list">No features added</div>'}
             </div>
         </div>
@@ -1263,14 +1371,112 @@ window.updateCharacterNotes = async val => {
 };
 
 // ========================================
+// Detail Modal - View item/spell/weapon/feature details
+// ========================================
+window.showDetailModal = function(title, content) {
+    // Create or get detail modal
+    let modal = $('#detail-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'detail-modal';
+        modal.className = 'modal hidden';
+        modal.innerHTML = `
+            <div class="modal-backdrop" onclick="closeDetailModal()"></div>
+            <div class="modal-content detail-modal-content">
+                <h2 id="detail-modal-title"></h2>
+                <div id="detail-modal-body"></div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeDetailModal()">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    $('#detail-modal-title').textContent = title;
+    $('#detail-modal-body').innerHTML = content;
+    modal.classList.remove('hidden');
+};
+
+window.closeDetailModal = function() {
+    const modal = $('#detail-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.showSpellDetail = function(id) {
+    const spell = currentCharacter.spells?.find(s => s.id === id);
+    if (!spell) return;
+    
+    const content = `
+        <div class="detail-grid">
+            <div class="detail-row"><strong>Level:</strong> ${spell.level === 0 ? 'Cantrip' : spell.level}</div>
+            ${spell.school ? `<div class="detail-row"><strong>School:</strong> ${spell.school}</div>` : ''}
+            ${spell.casting_time ? `<div class="detail-row"><strong>Casting Time:</strong> ${spell.casting_time}</div>` : ''}
+            ${spell.range ? `<div class="detail-row"><strong>Range:</strong> ${spell.range}</div>` : ''}
+            ${spell.components ? `<div class="detail-row"><strong>Components:</strong> ${spell.components}</div>` : ''}
+            ${spell.duration ? `<div class="detail-row"><strong>Duration:</strong> ${spell.duration}</div>` : ''}
+        </div>
+        ${spell.description ? `<div class="detail-description">${escapeHtml(spell.description).replace(/\n/g, '<br>')}</div>` : ''}
+    `;
+    
+    showDetailModal(spell.name, content);
+};
+
+window.showWeaponDetail = function(id) {
+    const weapon = currentCharacter.weapons?.find(w => w.id === id);
+    if (!weapon) return;
+    
+    const content = `
+        <div class="detail-grid">
+            <div class="detail-row"><strong>Attack Bonus:</strong> ${formatMod(weapon.attack_bonus)}</div>
+            <div class="detail-row"><strong>Damage:</strong> ${weapon.damage}</div>
+            ${weapon.damage_type ? `<div class="detail-row"><strong>Damage Type:</strong> ${weapon.damage_type}</div>` : ''}
+            ${weapon.properties ? `<div class="detail-row"><strong>Properties:</strong> ${weapon.properties}</div>` : ''}
+        </div>
+    `;
+    
+    showDetailModal(weapon.name, content);
+};
+
+window.showItemDetail = function(id) {
+    const item = currentCharacter.inventory_items?.find(i => i.id === id);
+    if (!item) return;
+    
+    const content = `
+        <div class="detail-grid">
+            <div class="detail-row"><strong>Type:</strong> ${item.item_type || 'Gear'}</div>
+            <div class="detail-row"><strong>Quantity:</strong> ${item.quantity}</div>
+            ${item.weight ? `<div class="detail-row"><strong>Weight:</strong> ${item.weight} lb</div>` : ''}
+        </div>
+        ${item.description ? `<div class="detail-description">${escapeHtml(item.description).replace(/\n/g, '<br>')}</div>` : ''}
+    `;
+    
+    showDetailModal(item.name, content);
+};
+
+window.showFeatureDetail = function(id) {
+    const feature = currentCharacter.features_traits?.find(f => f.id === id);
+    if (!feature) return;
+    
+    const content = `
+        ${feature.source ? `<div class="detail-source">Source: ${escapeHtml(feature.source)}</div>` : ''}
+        ${feature.description ? `<div class="detail-description">${escapeHtml(feature.description).replace(/\n/g, '<br>')}</div>` : '<p class="empty-list">No description available.</p>'}
+    `;
+    
+    showDetailModal(feature.name, content);
+};
+
+// ========================================
 // Add Modal with API Search
 // ========================================
 let addModalType = null;
 let selectedApiItem = null;
+let selectedApiEndpoint = null;
 
 window.openAddModal = function(type) {
     addModalType = type;
     selectedApiItem = null;
+    selectedApiEndpoint = null;
     const modal = $('#add-item-modal');
     const title = $('#add-modal-title');
     const fields = $('#add-modal-fields');
@@ -1279,9 +1485,10 @@ window.openAddModal = function(type) {
         weapon: { 
             title: 'Add Weapon', 
             apiEndpoint: 'equipment',
+            specialItems: SPECIAL_ATTACKS,
             apiFilter: item => item.equipment_category === 'Weapon' || item.url?.includes('weapon'),
             fields: [
-                { name: 'name', label: 'Name', type: 'search', required: true, placeholder: 'Search D&D weapons...' },
+                { name: 'name', label: 'Name', type: 'search', required: true, placeholder: 'Search D&D weapons or type custom...' },
                 { name: 'attack_bonus', label: 'Attack Bonus', type: 'number', value: 0 },
                 { name: 'damage', label: 'Damage', type: 'text', placeholder: '1d8+3' },
                 { name: 'damage_type', label: 'Damage Type', type: 'text', placeholder: 'Slashing' },
@@ -1314,11 +1521,11 @@ window.openAddModal = function(type) {
             ]
         },
         feature: { 
-            title: 'Add Feature', 
-            apiEndpoint: 'features',
+            title: 'Add Feature/Trait/Feat', 
+            apiEndpoints: ['features', 'traits', 'feats'],
             fields: [
-                { name: 'name', label: 'Name', type: 'search', required: true, placeholder: 'Search D&D features...' },
-                { name: 'source', label: 'Source', type: 'select', options: ['Class', 'Race', 'Background', 'Feat', 'Other'] },
+                { name: 'name', label: 'Name', type: 'search', required: true, placeholder: 'Search class features, racial traits, feats...' },
+                { name: 'source', label: 'Source', type: 'text', placeholder: 'Auto-detected or enter manually' },
                 { name: 'description', label: 'Description', type: 'textarea' }
             ]
         }
@@ -1360,29 +1567,69 @@ window.openAddModal = function(type) {
             searchResults.innerHTML = '<div class="api-search-loading">Searching...</div>';
             searchResults.classList.remove('hidden');
             
-            const results = await searchDndApi(config.apiEndpoint, query);
+            let results = [];
+            
+            // For features, search multiple endpoints
+            if (config.apiEndpoints) {
+                results = await searchMultipleEndpoints(config.apiEndpoints, query);
+            } else {
+                const apiResults = await searchDndApi(config.apiEndpoint, query);
+                results = apiResults.map(r => ({ ...r, _endpoint: config.apiEndpoint }));
+            }
+            
+            // Add special items for weapons (like Unarmed Strike)
+            if (config.specialItems) {
+                const matchingSpecial = config.specialItems.filter(s => 
+                    s.name.toLowerCase().includes(query.toLowerCase())
+                ).map(s => ({ ...s, _isSpecial: true }));
+                results = [...matchingSpecial, ...results];
+            }
             
             if (results.length === 0) {
                 searchResults.innerHTML = '<div class="api-search-empty">No results found. You can still add a custom entry.</div>';
             } else {
-                searchResults.innerHTML = results.slice(0, 10).map(r => 
-                    `<div class="api-search-result" data-url="${r.url}" data-name="${escapeHtml(r.name)}">${escapeHtml(r.name)}</div>`
-                ).join('');
+                searchResults.innerHTML = results.slice(0, 15).map(r => {
+                    let badge = '';
+                    if (r._isSpecial) {
+                        badge = '<span class="search-badge special">Special</span>';
+                    } else if (r._endpoint === 'features') {
+                        badge = '<span class="search-badge feature">Class Feature</span>';
+                    } else if (r._endpoint === 'traits') {
+                        badge = '<span class="search-badge trait">Racial Trait</span>';
+                    } else if (r._endpoint === 'feats') {
+                        badge = '<span class="search-badge feat">Feat</span>';
+                    }
+                    
+                    return `<div class="api-search-result" data-url="${r.url || ''}" data-name="${escapeHtml(r.name)}" data-endpoint="${r._endpoint || ''}" data-special="${r._isSpecial ? 'true' : 'false'}">
+                        ${escapeHtml(r.name)}${badge}
+                    </div>`;
+                }).join('');
                 
                 // Add click handlers to results
                 searchResults.querySelectorAll('.api-search-result').forEach(result => {
                     result.addEventListener('click', async () => {
                         const url = result.dataset.url;
                         const name = result.dataset.name;
+                        const endpoint = result.dataset.endpoint;
+                        const isSpecial = result.dataset.special === 'true';
                         
                         searchInput.value = name;
                         searchResults.classList.add('hidden');
                         
-                        // Fetch full details and populate form
-                        const details = await getDndApiDetails(url);
-                        if (details) {
-                            selectedApiItem = details;
-                            populateFormFromApi(type, details, fields);
+                        if (isSpecial) {
+                            const specialItem = config.specialItems.find(s => s.name === name);
+                            if (specialItem) {
+                                selectedApiItem = specialItem;
+                                selectedApiEndpoint = 'special';
+                                populateFormFromSpecial(type, specialItem, fields);
+                            }
+                        } else if (url) {
+                            const details = await getDndApiDetails(url);
+                            if (details) {
+                                selectedApiItem = details;
+                                selectedApiEndpoint = endpoint;
+                                populateFormFromApi(type, details, fields, endpoint);
+                            }
                         }
                     });
                 });
@@ -1391,6 +1638,7 @@ window.openAddModal = function(type) {
         
         searchInput.addEventListener('input', (e) => {
             selectedApiItem = null;
+            selectedApiEndpoint = null;
             debouncedSearch(e.target.value);
         });
         
@@ -1411,7 +1659,32 @@ window.openAddModal = function(type) {
     modal.classList.remove('hidden');
 };
 
-function populateFormFromApi(type, details, fieldsContainer) {
+function populateFormFromSpecial(type, specialItem, fieldsContainer) {
+    const form = fieldsContainer.closest('form');
+    
+    if (type === 'weapon') {
+        const strMod = currentCharacter ? getModifier(getAbilityScore(currentCharacter.ability_scores, 'str')) : 0;
+        const profBonus = currentCharacter ? getProfBonus(currentCharacter.level) : 2;
+        
+        let damage = specialItem.damage || '';
+        // Replace STR placeholder with the actual modifier value
+        // Handle the format properly - if it's "1+STR" and strMod is +1, result should be "1+1" not "1++1"
+        if (damage.includes('STR')) {
+            if (strMod >= 0) {
+                damage = damage.replace('+STR', `+${strMod}`).replace('STR', `+${strMod}`);
+            } else {
+                damage = damage.replace('+STR', strMod.toString()).replace('STR', strMod.toString());
+            }
+        }
+        
+        if (form.querySelector('[name="attack_bonus"]')) form.querySelector('[name="attack_bonus"]').value = strMod + profBonus;
+        if (form.querySelector('[name="damage"]')) form.querySelector('[name="damage"]').value = damage;
+        if (form.querySelector('[name="damage_type"]')) form.querySelector('[name="damage_type"]').value = specialItem.damage_type || '';
+        if (form.querySelector('[name="properties"]')) form.querySelector('[name="properties"]').value = specialItem.properties || '';
+    }
+}
+
+function populateFormFromApi(type, details, fieldsContainer, endpoint) {
     const form = fieldsContainer.closest('form');
     
     if (type === 'spell') {
@@ -1436,13 +1709,10 @@ function populateFormFromApi(type, details, fieldsContainer) {
         if (form.querySelector('[name="weight"]')) form.querySelector('[name="weight"]').value = formatted.weight || '';
         if (form.querySelector('[name="description"]')) form.querySelector('[name="description"]').value = formatted.description;
     } else if (type === 'feature') {
-        if (details.desc) {
-            const description = Array.isArray(details.desc) ? details.desc.join('\n\n') : details.desc;
-            if (form.querySelector('[name="description"]')) form.querySelector('[name="description"]').value = description;
-        }
-        if (details.class) {
-            if (form.querySelector('[name="source"]')) form.querySelector('[name="source"]').value = 'Class';
-        }
+        // Use the endpoint to auto-detect source
+        const formatted = formatFeatureFromApi(details, endpoint);
+        if (form.querySelector('[name="source"]')) form.querySelector('[name="source"]').value = formatted.source;
+        if (form.querySelector('[name="description"]')) form.querySelector('[name="description"]').value = formatted.description;
     }
 }
 
@@ -1451,6 +1721,7 @@ window.closeAddModal = function() {
     $('#add-item-form').reset();
     addModalType = null;
     selectedApiItem = null;
+    selectedApiEndpoint = null;
 };
 
 async function handleAddSubmit(e) {

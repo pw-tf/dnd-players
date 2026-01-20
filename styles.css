@@ -1622,13 +1622,19 @@ body {
 }
 
 .weapon-card {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: var(--space-md);
     align-items: center;
-    justify-content: space-between;
     padding: var(--space-md);
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
+    position: relative;
+}
+
+.weapon-info {
+    min-width: 0; /* Allow text truncation */
 }
 
 .weapon-info h3 {
@@ -1640,17 +1646,22 @@ body {
 .weapon-info p {
     font-size: 12px;
     color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .weapon-stats {
     display: flex;
     gap: var(--space-md);
     text-align: right;
+    flex-shrink: 0;
 }
 
 .weapon-stat {
     display: flex;
     flex-direction: column;
+    min-width: 40px; /* Ensure consistent width */
 }
 
 .weapon-stat .value {
@@ -1672,6 +1683,7 @@ body {
     color: var(--danger);
     cursor: pointer;
     transition: color var(--transition-fast);
+    flex-shrink: 0;
 }
 
 .weapon-delete:hover {
@@ -2340,4 +2352,129 @@ body {
     color: #ef4444;
     border-radius: var(--radius-full);
     border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ========================================
+   Clickable Cards
+======================================== */
+.clickable {
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.clickable:hover {
+    background: var(--bg-hover);
+    border-color: var(--accent-primary);
+}
+
+.weapon-card.clickable:hover,
+.spell-card.clickable:hover,
+.item-card.clickable:hover,
+.feature-card.clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ========================================
+   Detail Modal
+======================================== */
+.detail-modal-content {
+    max-width: 500px;
+}
+
+.detail-modal-content h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: var(--space-md);
+    color: var(--text-primary);
+}
+
+.detail-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+}
+
+.detail-row {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.detail-row strong {
+    color: var(--text-primary);
+    margin-right: var(--space-xs);
+}
+
+.detail-source {
+    font-size: 12px;
+    color: var(--accent-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.detail-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: var(--space-sm);
+}
+
+/* ========================================
+   Search Result Badges
+======================================== */
+.api-search-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.search-badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    margin-left: var(--space-sm);
+}
+
+.search-badge.special {
+    background: var(--warning-bg);
+    color: var(--warning);
+    border: 1px solid var(--warning);
+}
+
+.search-badge.feature {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-primary);
+    border: 1px solid var(--accent-primary);
+}
+
+.search-badge.trait {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--success);
+    border: 1px solid var(--success);
+}
+
+.search-badge.feat {
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    border: 1px solid #8b5cf6;
 }
