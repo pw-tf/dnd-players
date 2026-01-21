@@ -85,6 +85,79 @@ const COMMON_BONUS_ACTIONS = [
     }
 ];
 
+// Subclasses by class (PHB, Xanathar's, Tasha's, and other official sources)
+const SUBCLASSES = {
+    Barbarian: ['Path of the Berserker', 'Path of the Totem Warrior', 'Path of the Ancestral Guardian', 'Path of the Storm Herald', 'Path of the Zealot', 'Path of the Beast', 'Path of Wild Magic'],
+    Bard: ['College of Lore', 'College of Valor', 'College of Glamour', 'College of Swords', 'College of Whispers', 'College of Creation', 'College of Eloquence'],
+    Cleric: ['Knowledge Domain', 'Life Domain', 'Light Domain', 'Nature Domain', 'Tempest Domain', 'Trickery Domain', 'War Domain', 'Forge Domain', 'Grave Domain', 'Order Domain', 'Peace Domain', 'Twilight Domain'],
+    Druid: ['Circle of the Land', 'Circle of the Moon', 'Circle of Dreams', 'Circle of the Shepherd', 'Circle of Spores', 'Circle of Stars', 'Circle of Wildfire'],
+    Fighter: ['Champion', 'Battle Master', 'Eldritch Knight', 'Arcane Archer', 'Cavalier', 'Samurai', 'Echo Knight', 'Psi Warrior', 'Rune Knight'],
+    Monk: ['Way of the Open Hand', 'Way of Shadow', 'Way of the Four Elements', 'Way of the Drunken Master', 'Way of the Kensei', 'Way of the Sun Soul', 'Way of Mercy', 'Way of the Astral Self'],
+    Paladin: ['Oath of Devotion', 'Oath of the Ancients', 'Oath of Vengeance', 'Oath of Conquest', 'Oath of Redemption', 'Oath of Glory', 'Oath of the Watchers'],
+    Ranger: ['Hunter', 'Beast Master', 'Gloom Stalker', 'Horizon Walker', 'Monster Slayer', 'Fey Wanderer', 'Swarmkeeper'],
+    Rogue: ['Thief', 'Assassin', 'Arcane Trickster', 'Inquisitive', 'Mastermind', 'Scout', 'Swashbuckler', 'Phantom', 'Soulknife'],
+    Sorcerer: ['Draconic Bloodline', 'Wild Magic', 'Divine Soul', 'Shadow Magic', 'Storm Sorcery', 'Aberrant Mind', 'Clockwork Soul'],
+    Warlock: ['The Archfey', 'The Fiend', 'The Great Old One', 'The Celestial', 'The Hexblade', 'The Fathomless', 'The Genie'],
+    Wizard: ['School of Abjuration', 'School of Conjuration', 'School of Divination', 'School of Enchantment', 'School of Evocation', 'School of Illusion', 'School of Necromancy', 'School of Transmutation', 'War Magic', 'Bladesinging', 'Order of Scribes'],
+    Artificer: ['Alchemist', 'Armorer', 'Artillerist', 'Battle Smith']
+};
+
+// Official D&D 5e Feats
+const FEATS = [
+    { name: 'Alert', description: '+5 to initiative, can\'t be surprised, no advantage for hidden attackers' },
+    { name: 'Athlete', description: '+1 STR or DEX, climbing costs normal movement, jumping bonuses' },
+    { name: 'Actor', description: '+1 CHA, advantage on Deception/Performance checks to pass as different person' },
+    { name: 'Charger', description: 'Bonus action attack or shove after Dash action' },
+    { name: 'Crossbow Expert', description: 'Ignore loading, no disadvantage in melee, bonus action hand crossbow attack' },
+    { name: 'Defensive Duelist', description: 'Use reaction to add proficiency to AC with finesse weapon' },
+    { name: 'Dual Wielder', description: '+1 AC with two weapons, can dual wield non-light weapons' },
+    { name: 'Dungeon Delver', description: 'Advantage on saves vs traps, resistance to trap damage, search for traps faster' },
+    { name: 'Durable', description: '+1 CON, minimum healing from Hit Dice equals 2×CON modifier' },
+    { name: 'Elemental Adept', description: 'Spells ignore resistance to chosen element, 1s become 2s on damage' },
+    { name: 'Grappler', description: 'Advantage on attacks vs grappled creature, can pin them' },
+    { name: 'Great Weapon Master', description: 'Bonus action attack on crit/kill, -5 to hit for +10 damage' },
+    { name: 'Healer', description: 'Stabilize with healer\'s kit restores 1 HP, kit can heal HP once per rest' },
+    { name: 'Heavily Armored', description: '+1 STR, gain heavy armor proficiency' },
+    { name: 'Heavy Armor Master', description: '+1 STR, reduce non-magical physical damage by 3 in heavy armor' },
+    { name: 'Inspiring Leader', description: 'Give temp HP to allies after 10 min speech' },
+    { name: 'Keen Mind', description: '+1 INT, always know north/time, perfect recall of past month' },
+    { name: 'Lightly Armored', description: '+1 STR or DEX, gain light armor proficiency' },
+    { name: 'Linguist', description: '+1 INT, learn 3 languages, create written ciphers' },
+    { name: 'Lucky', description: '3 luck points per long rest to reroll or impose reroll' },
+    { name: 'Mage Slayer', description: 'Reaction attack vs caster, advantage on saves vs nearby spells, break concentration' },
+    { name: 'Magic Initiate', description: 'Learn 2 cantrips and 1 1st-level spell from a class' },
+    { name: 'Martial Adept', description: 'Learn 2 Battle Master maneuvers, gain 1 superiority die' },
+    { name: 'Medium Armor Master', description: 'No stealth disadvantage, max DEX bonus +3 instead of +2' },
+    { name: 'Mobile', description: '+10 speed, no difficult terrain after Dash, no opportunity attacks from attacked enemies' },
+    { name: 'Moderately Armored', description: '+1 STR or DEX, gain medium armor and shield proficiency' },
+    { name: 'Mounted Combatant', description: 'Advantage on melee vs smaller unmounted, redirect attacks to mount, mount takes half damage' },
+    { name: 'Observant', description: '+1 INT or WIS, +5 passive Perception/Investigation, read lips' },
+    { name: 'Polearm Master', description: 'Bonus action attack with polearm, opportunity attacks when entering reach' },
+    { name: 'Resilient', description: '+1 to chosen ability score, gain proficiency in that save' },
+    { name: 'Ritual Caster', description: 'Learn ritual spells from chosen class, can cast as rituals' },
+    { name: 'Savage Attacker', description: 'Reroll melee weapon damage once per turn' },
+    { name: 'Sentinel', description: 'Opportunity attacks reduce speed to 0, attack when enemy attacks ally, ignore Disengage' },
+    { name: 'Sharpshooter', description: 'Ignore cover (not total), no long range disadvantage, -5 to hit for +10 damage' },
+    { name: 'Shield Master', description: 'Bonus action shove with shield, +2 AC vs single-target spells, no damage on successful DEX saves' },
+    { name: 'Skilled', description: 'Gain proficiency in 3 skills or tools' },
+    { name: 'Skulker', description: 'Hide in lightly obscured areas, missing with ranged doesn\'t reveal position, dim light doesn\'t impose disadvantage on Perception' },
+    { name: 'Spell Sniper', description: 'Double range for attack roll spells, ignore cover (not total), learn 1 cantrip' },
+    { name: 'Tavern Brawler', description: '+1 STR or CON, proficient with improvised weapons, unarmed strike d4, bonus action grapple after hit' },
+    { name: 'Tough', description: 'Gain 2 HP per level (retroactive)' },
+    { name: 'War Caster', description: 'Advantage on concentration saves, cast spells as opportunity attacks, cast with hands full' },
+    { name: 'Weapon Master', description: '+1 STR or DEX, gain proficiency with 4 weapons' }
+];
+
+// ASI levels by class
+const ASI_LEVELS = {
+    Fighter: [4, 6, 8, 12, 14, 16, 19],
+    Rogue: [4, 8, 10, 12, 16, 19],
+    default: [4, 8, 12, 16, 19]
+};
+
+// Subclass selection level
+const SUBCLASS_LEVEL = 3;
+
 // ========================================
 // State
 // ========================================
@@ -581,7 +654,7 @@ async function handleCreate(e) {
 async function openCharacter(id) {
     // Clean up roster realtime when viewing a specific character
     cleanupRosterRealtime();
-    
+
     showLoading();
     const { data, error } = await db.from('characters').select(`*, ability_scores (*), skills (*), saving_throws (*), inventory_items (*), weapons (*), spells (*), spell_slots (*), features_traits (*), currency (*), character_details (*)`).eq('id', id).single();
     if (error || !data) { console.error(error); hideLoading(); showPage('home-page'); return; }
@@ -590,6 +663,11 @@ async function openCharacter(id) {
     showPage('character-page');
     hideLoading();
     setupRealtime(id);
+
+    // Auto-open level-up wizard if character needs subclass selection
+    if (needsSubclassSelection(currentCharacter)) {
+        setTimeout(() => openLevelUpWizard(), 300);
+    }
 }
 
 let realtimeRetryCount = 0;
@@ -846,7 +924,7 @@ function renderStatsTab() {
                     <div><span class="hp-current">${c.current_hit_points}</span><span class="hp-max">/${c.hit_point_maximum}</span></div>
                     ${c.temporary_hit_points > 0 ? `<span class="hp-temp">+${c.temporary_hit_points} temp</span>` : ''}
                 </div>
-                <div class="level-display" onclick="openLevelEditor()">
+                <div class="level-display ${c.pending_level_up || needsSubclassSelection(c) ? 'pending-levelup' : ''}" onclick="${c.pending_level_up || needsSubclassSelection(c) ? 'openLevelUpWizard()' : 'openLevelEditor()'}">
                     <div class="level-value">${c.level}</div>
                     <div class="level-label">Level</div>
                 </div>
@@ -2059,6 +2137,675 @@ async function handleDelete() {
 }
 
 // ========================================
+// DM Panel & Leveling System
+// ========================================
+
+// Show DM Panel button if user is DM
+function showDMControls() {
+    if (currentSession && currentSession.role === 'dm') {
+        $('#dm-panel-btn')?.classList.remove('hidden');
+    }
+}
+
+// Render DM Panel character list
+function renderDMPanel() {
+    const list = $('#dm-character-list');
+    if (!characters.length) {
+        list.innerHTML = '<p class="empty-list">No characters in this game world.</p>';
+        return;
+    }
+
+    list.innerHTML = characters.map(c => `
+        <div class="dm-character-item">
+            <div class="dm-character-info">
+                <div class="dm-character-name">${escapeHtml(c.name)}</div>
+                <div class="dm-character-details">
+                    ${escapeHtml(c.race)} ${escapeHtml(c.class)} • ${escapeHtml(c.player_name)}
+                </div>
+            </div>
+            <div class="dm-level-badge">Lvl ${c.level}</div>
+            <button class="btn-primary dm-grant-btn" onclick="grantIndividualLevel('${c.id}')" ${c.level >= 20 ? 'disabled' : ''}>
+                Grant Level
+            </button>
+        </div>
+    `).join('');
+}
+
+// Grant level to entire party
+window.grantPartyLevel = async function() {
+    if (!confirm('Grant a level to ALL characters in this game world?')) return;
+
+    showLoading();
+
+    const eligibleCharacters = characters.filter(c => c.level < 20);
+
+    if (!eligibleCharacters.length) {
+        alert('All characters are already at level 20!');
+        hideLoading();
+        return;
+    }
+
+    // Grant level to all eligible characters
+    for (const char of eligibleCharacters) {
+        await db.from('characters').update({
+            level: char.level + 1,
+            pending_level_up: true
+        }).eq('id', char.id);
+    }
+
+    await loadCharacters();
+    renderDMPanel();
+    hideLoading();
+
+    alert(`Level granted to ${eligibleCharacters.length} character(s)!`);
+};
+
+// Grant level to individual character
+window.grantIndividualLevel = async function(charId) {
+    const char = characters.find(c => c.id === charId);
+    if (!char) return;
+
+    if (char.level >= 20) {
+        alert('This character is already at max level (20)!');
+        return;
+    }
+
+    if (!confirm(`Grant a level to ${char.name}? (Level ${char.level} → ${char.level + 1})`)) return;
+
+    await db.from('characters').update({
+        level: char.level + 1,
+        pending_level_up: true
+    }).eq('id', charId);
+
+    await loadCharacters();
+    renderDMPanel();
+
+    alert(`${char.name} has been granted a level!`);
+};
+
+// Check if character needs subclass selection
+function needsSubclassSelection(character) {
+    return character.level >= SUBCLASS_LEVEL && !character.subclass;
+}
+
+// Check if level has ASI
+function isASILevel(characterClass, level) {
+    const asiLevels = ASI_LEVELS[characterClass] || ASI_LEVELS.default;
+    return asiLevels.includes(level);
+}
+
+// Open level-up wizard
+window.openLevelUpWizard = async function() {
+    // Allow wizard to open for pending level-ups OR missing subclass
+    if (!currentCharacter.pending_level_up && !needsSubclassSelection(currentCharacter)) return;
+
+    // If only needs subclass (no pending level-up), show simplified wizard
+    const onlySubclass = !currentCharacter.pending_level_up && needsSubclassSelection(currentCharacter);
+
+    // Store level-up state
+    window.levelUpState = {
+        character: currentCharacter,
+        currentStep: 1,
+        totalSteps: 5,
+        onlySubclass: onlySubclass,
+        changes: {
+            hp: null,
+            asiChoice: null,
+            asiAbilities: {},
+            featChoice: null,
+            subclass: null,
+            spells: []
+        }
+    };
+
+    // Fetch class data from API
+    const classIndex = currentCharacter.class.toLowerCase();
+    const response = await fetch(`${DND_API_BASE}/classes/${classIndex}/levels/${currentCharacter.level}`);
+    window.levelUpState.classData = await response.json();
+
+    // Skip to first applicable step
+    while (window.levelUpState.currentStep <= 5 && shouldSkipStep(window.levelUpState.currentStep)) {
+        window.levelUpState.currentStep++;
+    }
+
+    // Update wizard title
+    $('#levelup-wizard-title').textContent = onlySubclass ? 'Select Subclass' : 'Level Up!';
+
+    // Show wizard modal
+    $('#levelup-wizard-modal').classList.remove('hidden');
+    renderLevelUpStep();
+};
+
+// Render current level-up step
+async function renderLevelUpStep() {
+    const state = window.levelUpState;
+    const step = state.currentStep;
+
+    // Calculate which steps are active (not skipped)
+    const activeSteps = [];
+    for (let i = 1; i <= state.totalSteps; i++) {
+        if (!shouldSkipStep(i)) {
+            activeSteps.push(i);
+        }
+    }
+    const currentStepIndex = activeSteps.indexOf(step) + 1;
+    const totalActiveSteps = activeSteps.length;
+
+    // Update progress
+    $('#levelup-progress-text').textContent = `Step ${currentStepIndex} of ${totalActiveSteps}`;
+    $('#levelup-progress-bar').style.width = `${(currentStepIndex / totalActiveSteps) * 100}%`;
+
+    // Update nav buttons
+    $('#levelup-prev-btn').disabled = currentStepIndex === 1;
+
+    // Check if this is the last active step
+    const isLastStep = currentStepIndex === totalActiveSteps;
+    $('#levelup-next-btn').textContent = isLastStep ? 'Complete' : 'Next';
+
+    // Render step content
+    const container = $('#levelup-step-content');
+
+    switch(step) {
+        case 1:
+            container.innerHTML = await renderHPStep();
+            break;
+        case 2:
+            container.innerHTML = await renderASIStep();
+            break;
+        case 3:
+            container.innerHTML = await renderSubclassStep();
+            break;
+        case 4:
+            container.innerHTML = await renderSpellStep();
+            break;
+        case 5:
+            container.innerHTML = await renderFeatureStep();
+            break;
+    }
+}
+
+// Step 1: HP Increase
+async function renderHPStep() {
+    const char = currentCharacter;
+    const conMod = getModifier(getAbilityScore(char.ability_scores, 'con'));
+    const hitDie = HIT_DICE[char.class] || 8;
+    const average = Math.floor(hitDie / 2) + 1 + conMod;
+
+    return `
+        <h3>Hit Points</h3>
+        <p class="step-description">Choose how to increase your maximum HP:</p>
+
+        <div class="hp-choice-container">
+            <div class="hp-choice-option" onclick="selectHPOption('average')">
+                <input type="radio" name="hp-choice" value="average" id="hp-average">
+                <label for="hp-average">
+                    <div class="hp-choice-title">Take Average</div>
+                    <div class="hp-choice-value">+${average} HP</div>
+                    <div class="hp-choice-desc">Consistent and reliable</div>
+                </label>
+            </div>
+
+            <div class="hp-choice-option" onclick="selectHPOption('roll')">
+                <input type="radio" name="hp-choice" value="roll" id="hp-roll">
+                <label for="hp-roll">
+                    <div class="hp-choice-title">Roll for HP</div>
+                    <div class="hp-choice-value">1d${hitDie} + ${conMod}</div>
+                    <div class="hp-choice-desc">Take a chance!</div>
+                </label>
+            </div>
+        </div>
+
+        <div id="hp-roll-result" class="hp-roll-result hidden">
+            <label for="hp-roll-input" class="hp-roll-label">What did you roll on your d${hitDie}?</label>
+            <input type="number" id="hp-roll-input" class="hp-roll-input" min="1" max="${hitDie}" placeholder="Enter roll" oninput="applyHPRoll()">
+            <div id="hp-roll-display" class="hp-roll-display"></div>
+        </div>
+    `;
+}
+
+window.selectHPOption = function(option) {
+    const state = window.levelUpState;
+    state.changes.hpChoice = option;
+
+    // Select radio button
+    document.querySelectorAll('input[name="hp-choice"]').forEach(r => r.checked = false);
+    document.getElementById(`hp-${option}`).checked = true;
+
+    // Show/hide roll UI
+    const rollUI = $('#hp-roll-result');
+    if (option === 'roll') {
+        rollUI.classList.remove('hidden');
+    } else {
+        rollUI.classList.add('hidden');
+        const char = currentCharacter;
+        const conMod = getModifier(getAbilityScore(char.ability_scores, 'con'));
+        const hitDie = HIT_DICE[char.class] || 8;
+        state.changes.hp = Math.floor(hitDie / 2) + 1 + conMod;
+    }
+};
+
+window.applyHPRoll = function() {
+    const char = currentCharacter;
+    const conMod = getModifier(getAbilityScore(char.ability_scores, 'con'));
+    const input = $('#hp-roll-input');
+    const roll = parseInt(input.value);
+
+    if (!roll || roll < 1 || roll > (HIT_DICE[char.class] || 8)) {
+        $('#hp-roll-display').innerHTML = '';
+        window.levelUpState.changes.hp = null;
+        return;
+    }
+
+    const total = roll + conMod;
+    window.levelUpState.changes.hp = total;
+
+    $('#hp-roll-display').innerHTML = `
+        <div class="roll-animation">
+            <div class="roll-result">${roll}</div>
+            <div class="roll-modifier">+ ${conMod} (CON)</div>
+            <div class="roll-total">= ${total} HP</div>
+        </div>
+    `;
+};
+
+// Step 2: ASI or Feat
+async function renderASIStep() {
+    const char = currentCharacter;
+    const abs = char.ability_scores || {};
+
+    return `
+        <h3>Ability Score Improvement</h3>
+        <p class="step-description">Increase your ability scores or choose a feat:</p>
+
+        <div class="asi-choice-tabs">
+            <button class="asi-tab active" onclick="switchASITab('asi', this)">Ability Scores</button>
+            <button class="asi-tab" onclick="switchASITab('feat', this)">Feat</button>
+        </div>
+
+        <div id="asi-tab-content" class="asi-tab-content">
+            <p class="asi-instructions">Increase one ability by +2, or two abilities by +1 each (max 20):</p>
+            <div class="asi-grid">
+                ${ABILITIES.map(a => {
+                    const score = getAbilityScore(abs, a);
+                    return `
+                        <div class="asi-ability">
+                            <div class="asi-ability-name">${a.toUpperCase()}</div>
+                            <div class="asi-ability-score">${score}</div>
+                            <div class="asi-controls">
+                                <button class="asi-btn" onclick="adjustASI('${a}', -1)" ${score >= 20 ? 'disabled' : ''}>−</button>
+                                <span id="asi-${a}" class="asi-value">0</span>
+                                <button class="asi-btn" onclick="adjustASI('${a}', 1)" ${score >= 20 ? 'disabled' : ''}>+</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            <div class="asi-points-remaining">
+                Points remaining: <span id="asi-points">2</span>
+            </div>
+        </div>
+
+        <div id="feat-tab-content" class="asi-tab-content hidden">
+            <p class="asi-instructions">Choose a feat to gain instead of ability score increases:</p>
+            <div class="feat-list">
+                ${FEATS.map(f => `
+                    <div class="feat-option" onclick="selectFeat('${f.name}')">
+                        <input type="radio" name="feat-choice" id="feat-${f.name.replace(/\s/g, '-')}" value="${f.name}">
+                        <label>
+                            <div class="feat-name">${f.name}</div>
+                            <div class="feat-desc">${f.description}</div>
+                        </label>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+window.switchASITab = function(tab, clickedButton) {
+    // Reset choices
+    window.levelUpState.changes.asiChoice = tab;
+
+    // Update tabs
+    $$('.asi-tab').forEach(t => t.classList.remove('active'));
+    if (clickedButton) {
+        clickedButton.classList.add('active');
+    } else {
+        // Fallback: find by tab name
+        $$('.asi-tab').forEach(t => {
+            if (t.textContent.toLowerCase().includes(tab)) {
+                t.classList.add('active');
+            }
+        });
+    }
+
+    // Show/hide content
+    $('#asi-tab-content').classList.toggle('hidden', tab !== 'asi');
+    $('#feat-tab-content').classList.toggle('hidden', tab !== 'feat');
+};
+
+window.adjustASI = function(ability, delta) {
+    const state = window.levelUpState;
+    const current = state.changes.asiAbilities[ability] || 0;
+    const newVal = current + delta;
+
+    // Calculate total points used
+    const totalUsed = Object.values(state.changes.asiAbilities).reduce((sum, v) => sum + v, 0) - current + newVal;
+
+    if (totalUsed > 2 || newVal < 0 || newVal > 2) return;
+
+    state.changes.asiAbilities[ability] = newVal;
+    $(`#asi-${ability}`).textContent = newVal > 0 ? `+${newVal}` : '0';
+    $('#asi-points').textContent = 2 - totalUsed;
+};
+
+window.selectFeat = function(featName) {
+    window.levelUpState.changes.featChoice = featName;
+    document.getElementById(`feat-${featName.replace(/\s/g, '-')}`).checked = true;
+};
+
+// Step 3: Subclass Selection
+async function renderSubclassStep() {
+    const char = currentCharacter;
+    const subclasses = SUBCLASSES[char.class] || [];
+
+    return `
+        <h3>Choose Your Subclass</h3>
+        <p class="step-description">Select your ${char.class} subclass:</p>
+
+        <div class="subclass-list">
+            ${subclasses.map(sub => `
+                <div class="subclass-option" onclick="selectSubclass('${sub}')">
+                    <input type="radio" name="subclass" id="subclass-${sub.replace(/\s/g, '-')}" value="${sub}">
+                    <label for="subclass-${sub.replace(/\s/g, '-')}">
+                        <div class="subclass-name">${sub}</div>
+                    </label>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+window.selectSubclass = function(subclass) {
+    window.levelUpState.changes.subclass = subclass;
+    document.getElementById(`subclass-${subclass.replace(/\s/g, '-')}`).checked = true;
+};
+
+// Step 4: Spell Selection (for casters)
+async function renderSpellStep() {
+    const char = currentCharacter;
+    const classData = window.levelUpState.classData;
+    const spellsKnown = classData.spellcasting?.spells_known_at_level || 0;
+    const currentSpellCount = char.spells?.length || 0;
+    const canLearnCount = Math.max(0, spellsKnown - currentSpellCount);
+    const maxLevel = Math.min(9, Math.ceil(char.level / 2));
+
+    return `
+        <h3>Learn New Spells</h3>
+        <p class="step-description">You can learn ${canLearnCount} new spell(s).</p>
+
+        <div class="spell-level-filter">
+            ${Array.from({length: maxLevel}, (_, i) => i + 1).map(lvl => `
+                <button class="filter-btn" onclick="filterSpellLevel(${lvl})">Level ${lvl}</button>
+            `).join('')}
+        </div>
+
+        <div id="spell-selection-list" class="spell-selection-list">
+            <p>Select a spell level above to see available spells.</p>
+        </div>
+
+        <div class="spells-selected">
+            Selected: <span id="spell-count">0</span>/${canLearnCount}
+        </div>
+    `;
+}
+
+window.filterSpellLevel = async function(level) {
+    const response = await fetch(`${DND_API_BASE}/spells?level=${level}`);
+    const data = await response.json();
+
+    // Filter spells for this class (would need more API calls to verify, simplified here)
+    const list = $('#spell-selection-list');
+    list.innerHTML = data.results.map(spell => `
+        <div class="spell-select-option" onclick="toggleSpellSelection('${spell.index}', '${spell.name}', ${level})">
+            <input type="checkbox" id="spell-${spell.index}" value="${spell.index}">
+            <label for="spell-${spell.index}">${spell.name}</label>
+        </div>
+    `).join('');
+};
+
+window.toggleSpellSelection = function(index, name, level) {
+    const state = window.levelUpState;
+    const checkbox = document.getElementById(`spell-${index}`);
+    const classData = state.classData;
+    const spellsKnown = classData.spellcasting?.spells_known_at_level || 0;
+    const currentSpellCount = currentCharacter.spells?.length || 0;
+    const canLearnCount = Math.max(0, spellsKnown - currentSpellCount);
+
+    if (checkbox.checked) {
+        if (state.changes.spells.length >= canLearnCount) {
+            checkbox.checked = false;
+            return;
+        }
+        state.changes.spells.push({ index, name, level });
+    } else {
+        state.changes.spells = state.changes.spells.filter(s => s.index !== index);
+    }
+
+    $('#spell-count').textContent = state.changes.spells.length;
+};
+
+// Step 5: Feature Review
+async function renderFeatureStep() {
+    const classData = window.levelUpState.classData;
+    const features = classData.features || [];
+
+    return `
+        <h3>Level ${currentCharacter.level} Features</h3>
+        <p class="step-description">Review your new class features:</p>
+
+        <div class="feature-review-list">
+            ${features.length ? features.map(f => `
+                <div class="feature-review-item">
+                    <h4>${f.name}</h4>
+                    <p>See your class description for full details.</p>
+                </div>
+            `).join('') : '<p class="empty-list">No new features at this level.</p>'}
+        </div>
+
+        <div class="levelup-summary">
+            <h4>Summary of Changes:</h4>
+            <ul>
+                ${window.levelUpState.changes.hp ? `<li>HP: +${window.levelUpState.changes.hp}</li>` : ''}
+                ${Object.keys(window.levelUpState.changes.asiAbilities).length ? `<li>ASI: ${Object.entries(window.levelUpState.changes.asiAbilities).map(([k,v]) => `${k.toUpperCase()} +${v}`).join(', ')}</li>` : ''}
+                ${window.levelUpState.changes.featChoice ? `<li>Feat: ${window.levelUpState.changes.featChoice}</li>` : ''}
+                ${window.levelUpState.changes.subclass ? `<li>Subclass: ${window.levelUpState.changes.subclass}</li>` : ''}
+                ${window.levelUpState.changes.spells.length ? `<li>Spells: +${window.levelUpState.changes.spells.length}</li>` : ''}
+                <li>Proficiency Bonus: +${getProfBonus(currentCharacter.level)}</li>
+            </ul>
+        </div>
+    `;
+}
+
+// Check if a step should be skipped
+function shouldSkipStep(stepNumber) {
+    const char = currentCharacter;
+    const state = window.levelUpState;
+
+    // Skip based on what's applicable
+    switch(stepNumber) {
+        case 1: // HP
+            return state.onlySubclass; // Skip HP if only selecting subclass
+        case 2: // ASI
+            return state.onlySubclass || !isASILevel(char.class, char.level);
+        case 3: // Subclass
+            return char.level < SUBCLASS_LEVEL || (char.subclass && !state.onlySubclass);
+        case 4: // Spells
+            if (state.onlySubclass || !state.classData?.spellcasting) return true;
+            const spellsKnown = state.classData.spellcasting.spells_known_at_level || 0;
+            const currentSpellCount = char.spells?.length || 0;
+            const canLearnCount = Math.max(0, spellsKnown - currentSpellCount);
+            return canLearnCount === 0;
+        case 5: // Features
+            return state.onlySubclass;
+        default:
+            return false;
+    }
+}
+
+// Navigate wizard
+window.levelUpNext = async function() {
+    const state = window.levelUpState;
+
+    // Check if we're on the last step or all remaining steps would be skipped
+    let nextStep = state.currentStep + 1;
+    while (nextStep <= state.totalSteps && shouldSkipStep(nextStep)) {
+        nextStep++;
+    }
+
+    if (nextStep > state.totalSteps) {
+        // No more steps, complete level-up
+        await completeLevelUp();
+    } else {
+        // Move to next non-skipped step
+        state.currentStep = nextStep;
+        await renderLevelUpStep();
+    }
+};
+
+window.levelUpPrev = function() {
+    const state = window.levelUpState;
+    if (state.currentStep > 1) {
+        // Move to previous step, skipping any that should be skipped
+        do {
+            state.currentStep--;
+        } while (state.currentStep > 1 && shouldSkipStep(state.currentStep));
+
+        renderLevelUpStep();
+    }
+};
+
+window.closeLevelUpWizard = function() {
+    if (confirm('Are you sure? Your level-up progress will be lost.')) {
+        $('#levelup-wizard-modal').classList.add('hidden');
+        delete window.levelUpState;
+    }
+};
+
+// Apply all level-up changes
+async function completeLevelUp() {
+    const state = window.levelUpState;
+    const changes = state.changes;
+    const char = currentCharacter;
+
+    showLoading();
+
+    // If only selecting subclass (not leveling up), just update subclass
+    if (state.onlySubclass) {
+        if (changes.subclass) {
+            await db.from('characters').update({ subclass: changes.subclass }).eq('id', char.id);
+        }
+
+        // Reload character
+        await openCharacter(char.id);
+
+        $('#levelup-wizard-modal').classList.add('hidden');
+        delete window.levelUpState;
+
+        hideLoading();
+        alert('Subclass selected!');
+        return;
+    }
+
+    // Full level-up process
+    // Update HP
+    if (changes.hp) {
+        await db.from('characters').update({
+            hit_point_maximum: char.hit_point_maximum + changes.hp,
+            current_hit_points: char.current_hit_points + changes.hp
+        }).eq('id', char.id);
+    }
+
+    // Update ASI
+    if (Object.keys(changes.asiAbilities).length) {
+        const abs = Array.isArray(char.ability_scores) ? char.ability_scores[0] : char.ability_scores;
+        if (abs) {
+            for (const [ability, increase] of Object.entries(changes.asiAbilities)) {
+                const fullKey = ABILITY_FULL[ability].toLowerCase();
+                abs[fullKey] = (abs[fullKey] || 10) + increase;
+            }
+            await db.from('ability_scores').update(abs).eq('character_id', char.id);
+        }
+    }
+
+    // Update Subclass
+    if (changes.subclass) {
+        await db.from('characters').update({ subclass: changes.subclass }).eq('id', char.id);
+    }
+
+    // Add Spells
+    for (const spell of changes.spells) {
+        await db.from('spells').insert({
+            character_id: char.id,
+            name: spell.name,
+            level: spell.level,
+            api_index: spell.index,
+            prepared: false
+        });
+    }
+
+    // Update proficiency bonus and spell slots
+    const newProfBonus = getProfBonus(char.level);
+    await db.from('characters').update({
+        proficiency_bonus: newProfBonus,
+        pending_level_up: false
+    }).eq('id', char.id);
+
+    // Update spell slots for casters
+    if (state.classData.spellcasting) {
+        await updateSpellSlots(char.id, state.classData.spellcasting);
+    }
+
+    // Reload character
+    await openCharacter(char.id);
+
+    $('#levelup-wizard-modal').classList.add('hidden');
+    delete window.levelUpState;
+
+    hideLoading();
+    alert('Level-up complete!');
+}
+
+// Update spell slots based on class level
+async function updateSpellSlots(charId, spellcasting) {
+    const slotsData = spellcasting.spell_slots_level || {};
+
+    for (let slotLevel = 1; slotLevel <= 9; slotLevel++) {
+        const total = slotsData[`${slotLevel}`] || 0;
+
+        if (total > 0) {
+            // Check if slot exists
+            const { data: existing } = await db.from('spell_slots')
+                .select('*')
+                .eq('character_id', charId)
+                .eq('slot_level', slotLevel)
+                .single();
+
+            if (existing) {
+                await db.from('spell_slots').update({ total }).eq('id', existing.id);
+            } else {
+                await db.from('spell_slots').insert({
+                    character_id: charId,
+                    slot_level: slotLevel,
+                    total,
+                    used: 0
+                });
+            }
+        }
+    }
+}
+
+// ========================================
 // Tab Navigation
 // ========================================
 function initTabs() {
@@ -2125,10 +2872,21 @@ async function init() {
     $('#delete-modal .modal-backdrop')?.addEventListener('click', closeDeleteModal);
     $('#add-item-modal .modal-backdrop')?.addEventListener('click', closeAddModal);
     $('#level-modal .modal-backdrop')?.addEventListener('click', closeLevelModal);
-    
+
+    // DM Panel event listeners
+    $('#dm-panel-btn')?.addEventListener('click', () => {
+        renderDMPanel();
+        showPage('dm-panel-page');
+    });
+    $('#dm-panel-back-btn')?.addEventListener('click', () => showPage('home-page'));
+    $('#grant-party-level-btn')?.addEventListener('click', grantPartyLevel);
+
     await loadCharacters();
     hideLoading();
-    
+
+    // Show DM controls if user is DM
+    showDMControls();
+
     setupRosterRealtime();
     
     const savedPage = localStorage.getItem('dnd-current-page');

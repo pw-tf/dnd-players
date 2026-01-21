@@ -34,6 +34,13 @@
                             <path d="M21 3v5h-5"/>
                         </svg>
                     </button>
+                    <button id="dm-panel-btn" class="icon-btn hidden" title="DM Panel">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                    </button>
                     <button id="logout-btn" class="icon-btn" title="Logout">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -405,6 +412,79 @@
                     </div>
                 </form>
             </div>
+        </div>
+
+        <!-- Level-Up Wizard Modal -->
+        <div id="levelup-wizard-modal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content levelup-wizard">
+                <div class="levelup-header">
+                    <h2 id="levelup-wizard-title">Level Up!</h2>
+                    <button class="icon-btn" onclick="closeLevelUpWizard()" title="Close">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="levelup-progress">
+                    <div class="levelup-progress-bar-container">
+                        <div id="levelup-progress-bar" class="levelup-progress-bar"></div>
+                    </div>
+                    <div id="levelup-progress-text" class="levelup-progress-text">Step 1 of 5</div>
+                </div>
+
+                <div id="levelup-step-content" class="levelup-step-content">
+                    <!-- Step content will be rendered here -->
+                </div>
+
+                <div class="levelup-nav">
+                    <button id="levelup-prev-btn" class="btn-secondary" onclick="levelUpPrev()">Previous</button>
+                    <button id="levelup-next-btn" class="btn-primary" onclick="levelUpNext()">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DM Panel Page -->
+        <div id="dm-panel-page" class="page hidden">
+            <header class="header">
+                <div class="header-content">
+                    <button id="dm-panel-back-btn" class="icon-btn" title="Back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H5"/>
+                            <path d="M12 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+                    <h1>DM Panel</h1>
+                    <div style="width: 36px;"></div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="dm-panel-content">
+                    <!-- Party-wide Level Up -->
+                    <section class="dm-section">
+                        <h2 class="dm-section-title">Party Level Management</h2>
+                        <p class="dm-section-desc">Grant a level to all characters in this game world at once.</p>
+                        <button id="grant-party-level-btn" class="btn-primary btn-large">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 5v14"/>
+                                <path d="M5 12h14"/>
+                            </svg>
+                            Grant Level to Entire Party
+                        </button>
+                    </section>
+
+                    <!-- Individual Character Management -->
+                    <section class="dm-section">
+                        <h2 class="dm-section-title">Individual Character Management</h2>
+                        <p class="dm-section-desc">Grant levels to specific characters.</p>
+                        <div id="dm-character-list" class="dm-character-list">
+                            <!-- Character list will be populated here -->
+                        </div>
+                    </section>
+                </div>
+            </main>
         </div>
 
     </div>
