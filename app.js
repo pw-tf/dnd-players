@@ -179,20 +179,20 @@ async function loadCharacters() {
         console.error('No session when loading characters');
         return;
     }
-    
+
     console.log('Loading characters for game world:', currentSession.gameWorldId);
-    
+
     const { data, error } = await db
         .from('characters')
         .select(`*, ability_scores (*), skills (*)`)
         .eq('game_world_id', currentSession.gameWorldId)
-        .order('updated_at', { ascending: false });
-    
-    if (error) { 
-        console.error('Error loading characters:', error); 
-        return; 
+        .order('name', { ascending: true });
+
+    if (error) {
+        console.error('Error loading characters:', error);
+        return;
     }
-    
+
     characters = data || [];
     console.log(`Loaded ${characters.length} characters`);
     renderRoster();
@@ -883,14 +883,21 @@ function renderStatsTab() {
         <div class="stats-section">
             <div class="section-label">Ability Scores</div>
             <div class="ability-scores-display">
-                ${ABILITIES.map(a => {
-                    const score = getAbilityScore(abs, a);
-                    return `<div class="ability-score-box">
-                        <span class="label">${a.toUpperCase()}</span>
-                        <span class="score">${score}</span>
-                        <span class="modifier">${formatMod(getModifier(score))}</span>
-                    </div>`;
-                }).join('')}
+                ${(() => {
+                    // Find the highest ability score
+                    const scores = ABILITIES.map(a => getAbilityScore(abs, a));
+                    const maxScore = Math.max(...scores);
+
+                    return ABILITIES.map(a => {
+                        const score = getAbilityScore(abs, a);
+                        const isHighest = score === maxScore;
+                        return `<div class="ability-score-box">
+                            <span class="label">${a.toUpperCase()}${isHighest ? '<span class="top-skill-indicator"></span>' : ''}</span>
+                            <span class="score">${score}</span>
+                            <span class="modifier">${formatMod(getModifier(score))}</span>
+                        </div>`;
+                    }).join('');
+                })()}
             </div>
         </div>
 
@@ -1206,11 +1213,17 @@ function renderActionsTab() {
     const spells = c.spells || [];
     const slots = c.spell_slots || [];
     const features = c.features_traits || [];
-    
+
     // Filter features that are bonus actions (those with is_bonus_action flag or "bonus action" in description)
-    const bonusActionFeatures = features.filter(f => 
-        f.is_bonus_action || 
+    const bonusActionFeatures = features.filter(f =>
+        f.is_bonus_action ||
         (f.description && f.description.toLowerCase().includes('bonus action'))
+    );
+
+    // Filter features that are regular actions (not bonus actions)
+    const regularActionFeatures = features.filter(f =>
+        !f.is_bonus_action &&
+        !(f.description && f.description.toLowerCase().includes('bonus action'))
     );
 
     const groupedSpells = spells.reduce((acc, s) => { (acc[s.level] = acc[s.level] || []).push(s); return acc; }, {});
@@ -1223,9 +1236,6 @@ function renderActionsTab() {
             </div>
             <div class="weapons-list">
                 ${weapons.length ? weapons.map(w => {
-                    // Check if this weapon has usage tracking
-                    const hasUsage = w.uses_total && w.uses_total > 0;
-                    const usesRemaining = w.uses_remaining ?? w.uses_total ?? 0;
                     return `<div class="weapon-card clickable" onclick="showWeaponDetail('${w.id}')">
                     <div class="weapon-info"><h3>${escapeHtml(w.name)}</h3><p>${w.damage_type || ''} ${w.properties || ''}</p></div>
                     <div class="weapon-stats">
@@ -1236,6 +1246,27 @@ function renderActionsTab() {
                 </div>`;}).join('') : '<div class="empty-list">No attacks added</div>'}
             </div>
         </div>
+
+        ${regularActionFeatures.length ? `<div class="actions-section">
+            <div class="section-header-row">
+                <span class="section-label">Actions</span>
+            </div>
+            <div class="bonus-actions-list">
+                ${regularActionFeatures.map(f => {
+                    const hasUsage = f.uses_total && f.uses_total > 0;
+                    const usesRemaining = f.uses_remaining ?? f.uses_total ?? 0;
+                    return `<div class="action-card clickable" onclick="showFeatureDetail('${f.id}')">
+                        <div class="action-info">
+                            <h3>${escapeHtml(f.name)}</h3>
+                            <p>${f.source ? `<span class="action-source">${escapeHtml(f.source)}</span>` : ''}${f.uses_per_rest ? `<span class="action-rest-type">${f.uses_per_rest === 'short' ? 'Short Rest' : 'Long Rest'}</span>` : ''}</p>
+                        </div>
+                        ${hasUsage ? `<div class="action-uses">
+                            ${Array(f.uses_total).fill(0).map((_, i) => `<div class="action-use-marker ${i < usesRemaining ? '' : 'used'}" onclick="event.stopPropagation(); toggleFeatureUse('${f.id}', ${i}, ${usesRemaining}, ${f.uses_total})"></div>`).join('')}
+                        </div>` : ''}
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>` : ''}
 
         <div class="actions-section">
             <div class="section-header-row">
@@ -2084,13 +2115,13 @@ async function init() {
     $('#delete-char-btn')?.addEventListener('click', openDeleteModal);
     $('#cancel-delete-btn')?.addEventListener('click', closeDeleteModal);
     $('#confirm-delete-btn')?.addEventListener('click', handleDelete);
-    
+
     $('#add-item-form')?.addEventListener('submit', handleAddSubmit);
     $('#cancel-add-btn')?.addEventListener('click', closeAddModal);
-    
+
     $('#level-form')?.addEventListener('submit', handleLevelUpdate);
     $('#cancel-level-btn')?.addEventListener('click', closeLevelModal);
-    
+
     $('#delete-modal .modal-backdrop')?.addEventListener('click', closeDeleteModal);
     $('#add-item-modal .modal-backdrop')?.addEventListener('click', closeAddModal);
     $('#level-modal .modal-backdrop')?.addEventListener('click', closeLevelModal);

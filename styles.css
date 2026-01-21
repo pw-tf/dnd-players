@@ -1364,6 +1364,9 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
 }
 
 .ability-score-box .score {
@@ -2670,3 +2673,4 @@ body {
     font-size: 12px;
     margin-left: var(--space-sm);
 }
+
