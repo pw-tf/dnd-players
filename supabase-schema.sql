@@ -62,6 +62,7 @@ CREATE TABLE public.characters (
   avatar_url text,
   notes text,
   game_world_id uuid,
+  pending_level_up boolean DEFAULT false,
   CONSTRAINT characters_pkey PRIMARY KEY (id),
   CONSTRAINT characters_game_world_id_fkey FOREIGN KEY (game_world_id) REFERENCES public.game_worlds(id)
 );
@@ -84,6 +85,8 @@ CREATE TABLE public.features_traits (
   source text,
   uses_total integer,
   uses_remaining integer,
+  uses_per_rest text CHECK (uses_per_rest = ANY (ARRAY['short'::text, 'long'::text, 'short_or_long'::text, NULL::text])),
+  is_bonus_action boolean DEFAULT false,
   CONSTRAINT features_traits_pkey PRIMARY KEY (id),
   CONSTRAINT features_traits_character_id_fkey FOREIGN KEY (character_id) REFERENCES public.characters(id)
 );
