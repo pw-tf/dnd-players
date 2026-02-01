@@ -23,14 +23,6 @@
                         </svg>
                         Character Sheets
                     </a>
-                    <a id="sm-monster-tracker" class="side-menu-item hidden">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
-                            <circle cx="8" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/>
-                            <path d="M8 16s1.5 2 4 2 4-2 4-2"/>
-                        </svg>
-                        Monster Tracker
-                    </a>
                     <a id="sm-player-config" class="side-menu-item hidden">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -39,6 +31,14 @@
                             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                         </svg>
                         Player Config
+                    </a>                    
+                    <a id="sm-monster-tracker" class="side-menu-item hidden">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                            <circle cx="8" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/>
+                            <path d="M8 16s1.5 2 4 2 4-2 4-2"/>
+                        </svg>
+                        Monster Tracker
                     </a>
                     <div id="sm-dm-divider" class="side-menu-divider hidden"></div>
                     <a id="sm-delete-char" class="side-menu-item side-menu-item-danger hidden">
@@ -131,6 +131,28 @@
         } else {
             deleteChar.classList.add('hidden');
             deleteDivider.classList.add('hidden');
+        }
+
+        // Show "Login" instead of "Logout" when not logged in on monster-tracker
+        const logoutItem = document.getElementById('sm-logout');
+        if (isMonsterTracker && !session) {
+            logoutItem.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10 17 15 12 10 7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                Login
+            `;
+        } else {
+            logoutItem.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Logout
+            `;
         }
     }
 

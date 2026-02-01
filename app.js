@@ -244,6 +244,8 @@ function clearSession() {
     console.log('Clearing session...');
     localStorage.removeItem('dnd-session');
     sessionStorage.removeItem('dnd-session');
+    sessionStorage.removeItem('dnd-current-page');
+    sessionStorage.removeItem('dnd-current-character-id');
     currentSession = null;
 }
 
@@ -295,18 +297,18 @@ function getHpClass(pct) { return pct > 50 ? 'high' : pct > 25 ? 'mid' : 'low'; 
 function roll4d6Drop() { const r = [0,0,0,0].map(() => Math.floor(Math.random() * 6) + 1).sort((a,b) => b-a); return r[0]+r[1]+r[2]; }
 function calcHP(cls, lvl, conMod) { const hd = HIT_DICE[cls] || 8; return lvl === 1 ? Math.max(1, hd + conMod) : Math.max(1, hd + conMod + (lvl-1) * (Math.floor(hd/2) + 1 + conMod)); }
 
-function showPage(id) { 
-    $$('.page').forEach(p => p.classList.add('hidden')); 
-    $(`#${id}`).classList.remove('hidden'); 
-    // Save current page state to localStorage
+function showPage(id) {
+    $$('.page').forEach(p => p.classList.add('hidden'));
+    $(`#${id}`).classList.remove('hidden');
+    // Save current page state to sessionStorage (persists on refresh only)
     if (id === 'character-page' && currentCharacter) {
-        localStorage.setItem('dnd-current-page', 'character-page');
-        localStorage.setItem('dnd-current-character-id', currentCharacter.id);
+        sessionStorage.setItem('dnd-current-page', 'character-page');
+        sessionStorage.setItem('dnd-current-character-id', currentCharacter.id);
     } else if (id === 'home-page') {
-        localStorage.setItem('dnd-current-page', 'home-page');
-        localStorage.removeItem('dnd-current-character-id');
+        sessionStorage.setItem('dnd-current-page', 'home-page');
+        sessionStorage.removeItem('dnd-current-character-id');
     } else if (id === 'create-page') {
-        localStorage.setItem('dnd-current-page', 'create-page');
+        sessionStorage.setItem('dnd-current-page', 'create-page');
     }
 }
 function showLoading() { $('#loading').classList.remove('hidden'); }
@@ -899,7 +901,7 @@ async function refreshChar() {
 function renderCharacterPage() {
     const c = currentCharacter;
     $('#char-header-name').textContent = c.name;
-    $('#char-header-subtitle').textContent = `Level ${c.level} ${c.race} ${c.class}`;
+    $('#char-header-subtitle').textContent = `Level ${c.level} ${c.race} ${c.class}${c.subclass ? ` (${c.subclass})` : ''}`;
     renderStatsTab();
     renderSkillsTab();
     renderActionsTab();
@@ -1524,6 +1526,24 @@ function renderNotesTab() {
 
     $('#tab-notes').innerHTML = `
         <div class="notes-section">
+            <h3>Character Info</h3>
+            <div class="details-grid">
+                <div class="detail-item">
+                    <label>Background</label>
+                    <input type="text" value="${c.background || ''}" onchange="updateCharacterField('background', this.value)">
+                </div>
+                <div class="detail-item">
+                    <label>Alignment</label>
+                    <input type="text" value="${c.alignment || ''}" onchange="updateCharacterField('alignment', this.value)">
+                </div>
+                <div class="detail-item">
+                    <label>Subclass</label>
+                    <input type="text" value="${c.subclass || ''}" onchange="updateCharacterField('subclass', this.value)">
+                </div>
+            </div>
+        </div>
+
+        <div class="notes-section">
             <div class="section-header-row">
                 <h3>Features & Traits</h3>
                 <button class="add-btn" onclick="openAddModal('feature')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add</button>
@@ -1601,11 +1621,18 @@ window.updateDetail = async (field, val) => {
     await db.from('character_details').update({ [field]: val }).eq('character_id', currentCharacter.id); 
 };
 
-window.updateCharacterNotes = async val => { 
+window.updateCharacterNotes = async val => {
     // Optimistic update
     currentCharacter.notes = val;
     // Note: Don't re-render to avoid losing input focus
-    await db.from('characters').update({ notes: val }).eq('id', currentCharacter.id); 
+    await db.from('characters').update({ notes: val }).eq('id', currentCharacter.id);
+};
+
+window.updateCharacterField = async (field, val) => {
+    // Optimistic update
+    currentCharacter[field] = val;
+    // Note: Don't re-render to avoid losing input focus
+    await db.from('characters').update({ [field]: val }).eq('id', currentCharacter.id);
 };
 
 // ========================================
@@ -3514,6 +3541,17 @@ async function completeLevelUp() {
         }
     }
 
+    // Save Feat choice as a feature/trait
+    if (changes.asiChoice === 'feat' && changes.featChoice) {
+        const feat = FEATS.find(f => f.name === changes.featChoice);
+        await db.from('features_traits').insert({
+            character_id: char.id,
+            name: changes.featChoice,
+            description: feat ? feat.description : '',
+            source: `Feat (Level ${char.level})`
+        });
+    }
+
     // Update Subclass
     if (changes.subclass) {
         await db.from('characters').update({ subclass: changes.subclass }).eq('id', char.id);
@@ -3652,14 +3690,25 @@ async function init() {
 
     setupRosterRealtime();
     
-    const savedPage = localStorage.getItem('dnd-current-page');
-    const savedCharacterId = localStorage.getItem('dnd-current-character-id');
-    
-    if (savedPage === 'character-page' && savedCharacterId) {
-        await openCharacter(savedCharacterId);
-    } else if (savedPage === 'create-page') {
-        showPage('create-page');
+    // Only restore page state on reload (F5), not on fresh navigation
+    const navEntries = performance.getEntriesByType('navigation');
+    const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
+
+    if (isReload) {
+        const savedPage = sessionStorage.getItem('dnd-current-page');
+        const savedCharacterId = sessionStorage.getItem('dnd-current-character-id');
+
+        if (savedPage === 'character-page' && savedCharacterId) {
+            await openCharacter(savedCharacterId);
+        } else if (savedPage === 'create-page') {
+            showPage('create-page');
+        } else {
+            showPage('home-page');
+        }
     } else {
+        // Fresh navigation — clear any stale page state and go to default
+        sessionStorage.removeItem('dnd-current-page');
+        sessionStorage.removeItem('dnd-current-character-id');
         showPage('home-page');
     }
     

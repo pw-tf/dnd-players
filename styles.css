@@ -3799,3 +3799,1101 @@ body {
     margin: 8px 20px;
 }
 
+        /* ========================================
+           Monster Tracker Specific Styles
+           (extends dnd-players/styles.css)
+        ======================================== */
+
+        /* Page container */
+        .mt-container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: var(--space-md);
+        }
+
+        /* Settings panel */
+        #settingsPanel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+
+        #settingsPanel .settings-inner {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        /* Mode toggle */
+        .mode-toggle,
+        .compact-toggle {
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            user-select: none;
+            font-family: var(--font-sans);
+        }
+
+        .mode-toggle .simple-label,
+        .compact-toggle .full-label {
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .mode-toggle .advanced-label,
+        .compact-toggle .compact-label {
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .mode-toggle.advanced .simple-label,
+        .compact-toggle.compact .full-label {
+            opacity: 0.5;
+        }
+
+        .mode-toggle.advanced .advanced-label,
+        .compact-toggle.compact .compact-label {
+            opacity: 1;
+        }
+
+        .mode-toggle:hover .simple-label,
+        .mode-toggle:hover .advanced-label,
+        .compact-toggle:hover .full-label,
+        .compact-toggle:hover .compact-label {
+            opacity: 0.8;
+        }
+
+        /* Add Monster Form Container */
+        .mt-add-form {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            box-shadow: var(--shadow-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .mt-add-form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mt-add-form-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .mt-add-form-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: var(--space-xs);
+            transition: color var(--transition-fast);
+        }
+
+        .mt-add-form-close:hover {
+            color: var(--text-primary);
+        }
+
+        .mt-add-form-close svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .mt-add-form-body {
+            margin-top: var(--space-md);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .mt-form-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .mt-form-row-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        @media (min-width: 640px) {
+            .mt-form-row-wrap {
+                flex-direction: row;
+            }
+        }
+
+        .mt-form-row label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .mt-form-row label span {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Generic form inputs (monster tracker specific) */
+        .mt-input {
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 14px;
+            transition: all var(--transition-fast);
+        }
+
+        .mt-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .mt-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .mt-input-full {
+            width: 100%;
+        }
+
+        .mt-input-small {
+            width: 96px;
+        }
+
+        .mt-input-color {
+            width: 40px;
+            height: 36px;
+            padding: 2px;
+            cursor: pointer;
+        }
+
+        .mt-select {
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .mt-select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .mt-checkbox {
+            margin-right: var(--space-sm);
+        }
+
+        .mt-relative {
+            position: relative;
+            flex: 1;
+        }
+
+        .mt-add-btn-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--space-sm);
+        }
+
+        /* Individual inputs for multiple monsters */
+        .mt-individual-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .mt-individual-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        @media (min-width: 640px) {
+            .mt-individual-row {
+                flex-direction: row;
+            }
+        }
+
+        .mt-individual-label {
+            width: 128px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Monster suggestions dropdown */
+        #monsterSuggestions {
+            position: absolute;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+            z-index: 10;
+            box-shadow: var(--shadow-lg);
+        }
+
+        #monsterSuggestions div {
+            padding: var(--space-sm) var(--space-md);
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-primary);
+            transition: background var(--transition-fast);
+        }
+
+        #monsterSuggestions div:hover {
+            background-color: var(--bg-hover);
+            color: var(--accent-primary);
+        }
+
+        /* Monster list */
+        .mt-monster-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        /* Monster card */
+        .mt-monster-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+            transition: all var(--transition-fast);
+        }
+
+        .mt-monster-card.dead {
+            opacity: 0.5;
+            filter: grayscale(1);
+        }
+
+        .mt-monster-card.player-border {
+            border: 2px solid var(--accent-primary);
+        }
+
+        .mt-monster-card.npc-border {
+            border: 2px solid var(--warning);
+        }
+
+        .mt-monster-card.custom-border {
+            border: 2px solid var(--custom-border-color, transparent);
+        }
+
+        .mt-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        /* Monster header */
+        .monster-header {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            position: relative;
+        }
+
+        @media (min-width: 640px) {
+            .monster-header {
+                flex-direction: row;
+                align-items: center;
+            }
+        }
+
+        .monster-name-container {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .monster-name {
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'Playfair Display', serif;
+            cursor: pointer;
+            transition: color var(--transition-fast);
+        }
+
+        .monster-name:hover {
+            color: var(--accent-primary);
+        }
+
+        .details-icon {
+            width: 16px;
+            height: 16px;
+            margin-left: 4px;
+            vertical-align: middle;
+            cursor: pointer;
+            opacity: 0.5;
+            color: var(--text-secondary);
+            transition: all var(--transition-fast);
+        }
+
+        .details-icon:hover {
+            opacity: 1;
+            color: var(--accent-primary);
+        }
+
+        .ac-initiative {
+            display: flex;
+            flex-direction: row;
+            gap: var(--space-sm);
+        }
+
+        .ac-display,
+        .initiative-display {
+            cursor: pointer;
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 2px 8px;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-family: var(--font-mono);
+            transition: background-color var(--transition-fast);
+        }
+
+        .ac-display:hover,
+        .initiative-display:hover {
+            background-color: var(--bg-hover);
+        }
+
+        /* Remove button */
+        .remove-button {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            padding: var(--space-xs);
+            transition: color var(--transition-fast);
+        }
+
+        .remove-button:hover {
+            color: #b91c1c;
+        }
+
+        .remove-button svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* HP controls row */
+        .mt-hp-row {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .mt-hp-btn-minus {
+            padding: 8px 12px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .mt-hp-btn-minus:hover {
+            background: #dc2626;
+        }
+
+        .mt-hp-btn-plus {
+            padding: 8px 12px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background var(--transition-fast);
+        }
+
+        .mt-hp-btn-plus:hover {
+            background: #16a34a;
+        }
+
+        /* HP display badge */
+        .hp-display {
+            cursor: pointer;
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 2px 8px;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-family: var(--font-mono);
+            transition: background-color var(--transition-fast);
+            position: relative;
+        }
+
+        .hp-display:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .hp-display input {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            padding: 1px 4px;
+            width: 64px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+        }
+
+        /* Health bar */
+        .health-bar {
+            display: flex;
+            height: 20px;
+            background-color: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .health-segment {
+            flex: 1;
+            background-color: var(--success);
+            border-right: 1px solid var(--bg-tertiary);
+        }
+
+        .health-segment:last-child {
+            border-right: none;
+        }
+
+        .empty-segment {
+            background-color: var(--bg-tertiary);
+        }
+
+        /* Status & notes row */
+        .mt-status-row {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            align-items: flex-start;
+        }
+
+        @media (min-width: 640px) {
+            .mt-status-row {
+                flex-direction: row;
+            }
+        }
+
+        .mt-status {
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .mt-status.healthy { color: var(--success); }
+        .mt-status.injured { color: var(--warning); }
+        .mt-status.bloodied { color: var(--warning); }
+        .mt-status.critical { color: var(--danger); }
+        .mt-status.dead { color: var(--text-muted); }
+
+        .mt-notes-field {
+            flex: 1;
+        }
+
+        /* Notes textarea (overrides dnd-players .notes-textarea for monster-tracker context) */
+        .mt-notes-textarea {
+            resize: vertical;
+            min-height: 40px;
+            max-height: 100px;
+            width: 100%;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: var(--space-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .mt-notes-textarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .mt-notes-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* HP Popup */
+        .hp-popup {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--bg-secondary);
+            padding: var(--space-md);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-default);
+            z-index: 50;
+            width: 240px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .hp-popup .hp-input {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            padding: 4px 8px;
+            width: 60px;
+            text-align: center;
+            margin: 4px auto;
+            display: block;
+            font-size: 13px;
+            font-family: var(--font-mono);
+        }
+
+        .hp-popup .hp-buttons {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .hp-popup .hp-buttons button {
+            padding: 6px 8px;
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color var(--transition-fast);
+            border: none;
+            font-family: var(--font-sans);
+        }
+
+        .hp-popup .hp-buttons .decrement {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .hp-popup .hp-buttons .decrement:hover {
+            background-color: #b91c1c;
+        }
+
+        .hp-popup .hp-buttons .increment {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .hp-popup .hp-buttons .increment:hover {
+            background-color: #16a34a;
+        }
+
+        .hp-popup .hp-buttons .set {
+            background-color: var(--accent-primary);
+            color: white;
+        }
+
+        .hp-popup .hp-buttons .set:hover {
+            background-color: var(--accent-primary-hover);
+        }
+
+        /* Monster Details Popup */
+        .details-popup {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: var(--bg-secondary);
+            padding: var(--space-md);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-default);
+            z-index: 50;
+            width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .details-popup .details-content {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        .details-popup .details-content h4 {
+            font-weight: 600;
+            margin-top: var(--space-sm);
+            margin-bottom: var(--space-xs);
+            color: var(--text-primary);
+            font-family: 'Playfair Display', serif;
+        }
+
+        .details-popup .details-content p {
+            margin-bottom: var(--space-xs);
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .details-popup .details-content ul {
+            list-style-type: disc;
+            margin-left: var(--space-md);
+            margin-bottom: var(--space-xs);
+        }
+
+        .details-popup .details-content li {
+            margin-bottom: 2px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .details-popup .details-content .dice {
+            text-decoration: underline;
+            color: var(--accent-primary);
+        }
+
+        /* Encounter groups */
+        .encounter-group {
+            margin-bottom: var(--space-md);
+            background-color: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            border: 1px solid var(--border-subtle);
+        }
+
+        .encounter-group h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: var(--space-sm);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            font-family: 'Playfair Display', serif;
+        }
+
+        .encounter-group.ungrouped h2 {
+            display: none;
+        }
+
+        .encounter-group.collapsed .encounter-monsters {
+            display: none;
+        }
+
+        .encounter-monsters {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .encounter-toggle-icon {
+            width: 20px;
+            height: 20px;
+            transition: transform var(--transition-fast);
+        }
+
+        .encounter-group.collapsed .encounter-toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        /* Floating add button - reuse dnd-players fab pattern */
+        .floating-add-button {
+            position: fixed;
+            bottom: var(--space-lg);
+            right: var(--space-lg);
+            background-color: var(--accent-primary);
+            color: white;
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            z-index: 30;
+            transition: all var(--transition-fast);
+            border: none;
+        }
+
+        .floating-add-button:hover {
+            background-color: var(--accent-primary-hover);
+            transform: scale(1.05);
+        }
+
+        .floating-add-button svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        /* Modal overlays */
+        .mt-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .mt-modal-box {
+            background-color: var(--bg-secondary);
+            padding: var(--space-xl);
+            border-radius: var(--radius-lg);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-default);
+        }
+
+        .mt-modal-form-box {
+            background-color: var(--bg-secondary);
+            padding: var(--space-md);
+            border-radius: var(--radius-lg);
+            max-width: 500px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-default);
+        }
+
+        .mt-modal-box h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: var(--space-md);
+            font-family: 'Playfair Display', serif;
+            color: var(--text-primary);
+        }
+
+        .mt-modal-box .mode-option {
+            margin-bottom: var(--space-md);
+            text-align: left;
+        }
+
+        .mt-modal-box .mode-option label {
+            display: block;
+            margin-bottom: var(--space-sm);
+            cursor: pointer;
+            font-family: 'Playfair Display', serif;
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        .mt-modal-box .mode-option input[type="radio"] {
+            margin-right: var(--space-sm);
+        }
+
+        .mt-modal-box .mode-option p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .mt-modal-box .never-show {
+            margin-top: var(--space-lg);
+            margin-bottom: var(--space-lg);
+            text-align: left;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .mt-modal-box .never-show label {
+            cursor: pointer;
+        }
+
+        .mt-modal-box .never-show input[type="checkbox"] {
+            margin-right: var(--space-sm);
+        }
+
+        /* Seed code textarea */
+        #seedCodeTextarea {
+            width: 100%;
+            height: 150px;
+            padding: var(--space-md);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-md);
+            resize: vertical;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        #seedCodeTextarea:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .mt-modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-sm);
+            margin-top: var(--space-sm);
+        }
+
+        /* Message content box */
+        .mt-message-box {
+            background-color: var(--bg-secondary);
+            padding: var(--space-xl);
+            border-radius: var(--radius-lg);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-default);
+        }
+
+        .mt-message-box h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: var(--space-md);
+            font-family: 'Playfair Display', serif;
+            color: var(--text-primary);
+        }
+
+        .mt-message-box p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-lg);
+            line-height: 1.5;
+        }
+
+        /* Loading spinner - reuse dnd-players loader pattern */
+        .mt-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .spinner {
+            border: 4px solid var(--border-subtle);
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Inline edit inputs */
+        .mt-inline-input {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            padding: 2px 4px;
+            width: 64px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+        }
+
+        .mt-inline-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        /* Version footer */
+        .ver {
+            opacity: 0.3;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding: var(--space-lg) 0;
+        }
+
+        /* Compact mode overrides */
+        body.compact .mt-container {
+            max-width: 700px;
+            padding: var(--space-xs);
+        }
+
+        body.compact .header-title {
+            font-size: 18px;
+        }
+
+        body.compact .monster-name {
+            font-size: 14px;
+        }
+
+        body.compact .mt-monster-card {
+            padding: var(--space-sm);
+        }
+
+        body.compact .mt-modal-form-box {
+            padding: var(--space-sm);
+        }
+
+        body.compact .encounter-group {
+            padding: var(--space-sm);
+            margin-bottom: var(--space-sm);
+        }
+
+        body.compact .mt-monster-list {
+            gap: var(--space-sm);
+        }
+
+        body.compact .encounter-monsters {
+            gap: var(--space-sm);
+        }
+
+        body.compact .health-bar {
+            height: 10px;
+        }
+
+        body.compact .mt-notes-textarea {
+            min-height: 20px;
+            max-height: 48px;
+            font-size: 12px;
+            padding: 2px;
+        }
+
+        body.compact .settings-button svg,
+        body.compact .remove-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        body.compact .initiative-display,
+        body.compact .ac-display,
+        body.compact .hp-display {
+            padding: 1px 4px;
+            font-size: 12px;
+        }
+
+        body.compact .mt-input,
+        body.compact .mt-select {
+            padding: 2px 4px;
+            font-size: 12px;
+        }
+
+        body.compact .mt-input-small {
+            width: 56px;
+        }
+
+        body.compact .mt-status {
+            font-size: 12px;
+        }
+
+        /* Character Picker */
+        .mt-char-picker {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md);
+            box-shadow: var(--shadow-md);
+            margin-bottom: var(--space-lg);
+        }
+
+        .mt-char-picker h2 {
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'Playfair Display', serif;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+
+        .mt-char-picker-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            align-items: center;
+        }
+
+        .mt-char-picker-row select {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .mt-char-picker-status {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-top: var(--space-xs);
+            margin-bottom: 0;
+        }
+
+        .mt-char-picker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mt-char-picker-header h2 {
+            margin-bottom: 0;
+        }
+
+        /* Add Selector Popup */
+        .mt-add-selector {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            z-index: 50;
+        }
+
+        .mt-add-selector-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: background var(--transition-fast);
+        }
+
+        .mt-add-selector-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .mt-add-selector-item + .mt-add-selector-item {
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .mt-add-selector-item svg {
+            opacity: 0.7;
+            flex-shrink: 0;
+        }
