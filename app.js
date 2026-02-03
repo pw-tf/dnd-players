@@ -158,6 +158,24 @@ const ASI_LEVELS = {
 // Subclass selection level
 const SUBCLASS_LEVEL = 3;
 
+// 5e EXP thresholds per level
+const EXP_THRESHOLDS = [
+    0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000,
+    85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000
+];
+
+function getLevelForEXP(exp) {
+    for (let i = EXP_THRESHOLDS.length - 1; i >= 0; i--) {
+        if (exp >= EXP_THRESHOLDS[i]) return i + 1;
+    }
+    return 1;
+}
+
+function getEXPForNextLevel(level) {
+    if (level >= 20) return null;
+    return EXP_THRESHOLDS[level];
+}
+
 // ========================================
 // State
 // ========================================
@@ -930,6 +948,7 @@ function renderStatsTab() {
                 <div class="level-display ${c.pending_level_up || needsSubclassSelection(c) ? 'pending-levelup' : ''}" onclick="${c.pending_level_up || needsSubclassSelection(c) ? 'openLevelUpWizard()' : 'openLevelEditor()'}">
                     <div class="level-value">${c.level}</div>
                     <div class="level-label">Level</div>
+                    ${getLevelingMode() === 'exp' ? `<div class="level-exp-text">${(c.experience_points || 0).toLocaleString()} XP</div>` : ''}
                 </div>
             </div>
             <div class="hp-bar-large"><div class="hp-bar-fill ${getHpClass(pct)}" style="width:${pct}%"></div></div>
@@ -2950,31 +2969,116 @@ function showDMControls() {
     // No-op: side menu handles DM visibility dynamically
 }
 
-// Render DM Panel character list
-function renderDMPanel() {
-    const list = $('#dm-character-list');
-    if (!characters.length) {
-        list.innerHTML = '<p class="empty-list">No characters in this game world.</p>';
-        return;
-    }
-
-    list.innerHTML = characters.map(c => `
-        <div class="dm-character-item">
-            <div class="dm-character-info">
-                <div class="dm-character-name">${escapeHtml(c.name)}</div>
-                <div class="dm-character-details">
-                    ${escapeHtml(c.race)} ${escapeHtml(c.class)} • ${escapeHtml(c.player_name)}
-                </div>
-            </div>
-            <div class="dm-level-badge">Lvl ${c.level}</div>
-            <button class="btn-primary dm-grant-btn" onclick="grantIndividualLevel('${c.id}')" ${c.level >= 20 ? 'disabled' : ''}>
-                Grant Level
-            </button>
-        </div>
-    `).join('');
+// Get current leveling mode
+function getLevelingMode() {
+    return currentSession?.gameWorld?.leveling_mode || 'milestone';
 }
 
-// Grant level to entire party
+// Render DM Panel character list
+function renderDMPanel() {
+    const container = $('#dm-panel-dynamic');
+    if (!container) return;
+    const mode = getLevelingMode();
+
+    // Update toggle state
+    const toggleBtns = $$('.dm-leveling-btn');
+    toggleBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+
+    if (mode === 'exp') {
+        renderDMPanelEXP(container);
+    } else {
+        renderDMPanelMilestone(container);
+    }
+}
+
+function renderDMPanelMilestone(container) {
+    const charListHTML = !characters.length
+        ? '<p class="empty-list">No characters in this game world.</p>'
+        : characters.map(c => `
+            <div class="dm-character-item">
+                <div class="dm-character-info">
+                    <div class="dm-character-name">${escapeHtml(c.name)}</div>
+                    <div class="dm-character-details">
+                        ${escapeHtml(c.race)} ${escapeHtml(c.class)} • ${escapeHtml(c.player_name)}
+                    </div>
+                </div>
+                <div class="dm-level-badge">Lvl ${c.level}</div>
+                <button class="btn-primary dm-grant-btn" onclick="grantIndividualLevel('${c.id}')" ${c.level >= 20 ? 'disabled' : ''}>
+                    Grant Level
+                </button>
+            </div>
+        `).join('');
+
+    container.innerHTML = `
+        <section class="dm-section">
+            <h2 class="dm-section-title">Party Level Management</h2>
+            <p class="dm-section-desc">Grant a level to all characters in this game world at once.</p>
+            <button class="btn-primary btn-large" onclick="grantPartyLevel()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 5v14"/><path d="M5 12h14"/>
+                </svg>
+                Grant Level to Entire Party
+            </button>
+        </section>
+        <section class="dm-section">
+            <h2 class="dm-section-title">Individual Character Management</h2>
+            <p class="dm-section-desc">Grant levels to specific characters.</p>
+            <div class="dm-character-list">${charListHTML}</div>
+        </section>
+    `;
+}
+
+function renderDMPanelEXP(container) {
+    const charListHTML = !characters.length
+        ? '<p class="empty-list">No characters in this game world.</p>'
+        : characters.map(c => {
+            const nextLevelEXP = getEXPForNextLevel(c.level);
+            const expDisplay = nextLevelEXP !== null
+                ? `${(c.experience_points || 0).toLocaleString()} / ${nextLevelEXP.toLocaleString()} XP`
+                : `${(c.experience_points || 0).toLocaleString()} XP (Max)`;
+            const pct = nextLevelEXP ? Math.min(100, ((c.experience_points || 0) / nextLevelEXP) * 100) : 100;
+            return `
+            <div class="dm-character-item dm-character-item-exp">
+                <div class="dm-character-info">
+                    <div class="dm-character-name">${escapeHtml(c.name)}</div>
+                    <div class="dm-character-details">
+                        ${escapeHtml(c.race)} ${escapeHtml(c.class)} • ${escapeHtml(c.player_name)}
+                    </div>
+                    <div class="dm-exp-bar"><div class="dm-exp-bar-fill" style="width:${pct}%"></div></div>
+                    <div class="dm-exp-text">${expDisplay}</div>
+                </div>
+                <div class="dm-level-badge">Lvl ${c.level}</div>
+                <div class="dm-exp-grant">
+                    <input type="number" class="dm-exp-input" id="exp-input-${c.id}" placeholder="EXP" min="0">
+                    <button class="btn-primary dm-grant-btn" onclick="grantIndividualEXP('${c.id}')" ${c.level >= 20 ? 'disabled' : ''}>
+                        Grant
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+
+    container.innerHTML = `
+        <section class="dm-section">
+            <h2 class="dm-section-title">Party EXP Management</h2>
+            <p class="dm-section-desc">Grant EXP to all characters. They auto-level at 5e thresholds.</p>
+            <div class="dm-party-exp-row">
+                <input type="number" class="dm-exp-input dm-party-exp-input" id="party-exp-input" placeholder="EXP amount" min="0">
+                <button class="btn-primary btn-large" onclick="grantPartyEXP()">
+                    Grant EXP to Entire Party
+                </button>
+            </div>
+        </section>
+        <section class="dm-section">
+            <h2 class="dm-section-title">Individual Character Management</h2>
+            <p class="dm-section-desc">Grant EXP to specific characters.</p>
+            <div class="dm-character-list">${charListHTML}</div>
+        </section>
+    `;
+}
+
+// Grant level to entire party (milestone mode)
 window.grantPartyLevel = async function() {
     if (!confirm('Grant a level to ALL characters in this game world?')) return;
 
@@ -2988,7 +3092,6 @@ window.grantPartyLevel = async function() {
         return;
     }
 
-    // Grant level to all eligible characters
     for (const char of eligibleCharacters) {
         await db.from('characters').update({
             level: char.level + 1,
@@ -3003,7 +3106,7 @@ window.grantPartyLevel = async function() {
     alert(`Level granted to ${eligibleCharacters.length} character(s)!`);
 };
 
-// Grant level to individual character
+// Grant level to individual character (milestone mode)
 window.grantIndividualLevel = async function(charId) {
     const char = characters.find(c => c.id === charId);
     if (!char) return;
@@ -3024,6 +3127,90 @@ window.grantIndividualLevel = async function(charId) {
     renderDMPanel();
 
     alert(`${char.name} has been granted a level!`);
+};
+
+// Grant EXP to entire party
+window.grantPartyEXP = async function() {
+    const input = $('#party-exp-input');
+    const amount = parseInt(input?.value);
+    if (!amount || amount <= 0) {
+        alert('Please enter a valid EXP amount.');
+        return;
+    }
+
+    if (!confirm(`Grant ${amount.toLocaleString()} EXP to ALL characters?`)) return;
+
+    showLoading();
+    const leveledUp = [];
+
+    for (const char of characters) {
+        if (char.level >= 20) continue;
+        const newEXP = (char.experience_points || 0) + amount;
+        const newLevel = getLevelForEXP(newEXP);
+        const updates = { experience_points: newEXP };
+
+        if (newLevel > char.level) {
+            updates.level = Math.min(newLevel, 20);
+            updates.pending_level_up = true;
+            leveledUp.push(`${char.name} (Lvl ${char.level} → ${updates.level})`);
+        }
+
+        await db.from('characters').update(updates).eq('id', char.id);
+    }
+
+    await loadCharacters();
+    renderDMPanel();
+    hideLoading();
+
+    let msg = `EXP granted to party!`;
+    if (leveledUp.length) {
+        msg += `\n\nLeveled up:\n${leveledUp.join('\n')}`;
+    }
+    alert(msg);
+};
+
+// Grant EXP to individual character
+window.grantIndividualEXP = async function(charId) {
+    const char = characters.find(c => c.id === charId);
+    if (!char) return;
+
+    const input = $(`#exp-input-${charId}`);
+    const amount = parseInt(input?.value);
+    if (!amount || amount <= 0) {
+        alert('Please enter a valid EXP amount.');
+        return;
+    }
+
+    const newEXP = (char.experience_points || 0) + amount;
+    const newLevel = getLevelForEXP(newEXP);
+    const updates = { experience_points: newEXP };
+    let leveled = false;
+
+    if (newLevel > char.level && char.level < 20) {
+        updates.level = Math.min(newLevel, 20);
+        updates.pending_level_up = true;
+        leveled = true;
+    }
+
+    await db.from('characters').update(updates).eq('id', char.id);
+    await loadCharacters();
+    renderDMPanel();
+
+    if (leveled) {
+        alert(`${char.name} gained ${amount.toLocaleString()} EXP and leveled up to ${updates.level}!`);
+    }
+};
+
+// Toggle leveling mode from DM panel
+window.toggleLevelingMode = async function(mode) {
+    if (!currentSession?.gameWorld) return;
+
+    await db.from('game_worlds').update({
+        leveling_mode: mode
+    }).eq('id', currentSession.gameWorldId);
+
+    currentSession.gameWorld.leveling_mode = mode;
+    renderDMPanel();
 };
 
 // Check if character needs subclass selection
@@ -3680,7 +3867,12 @@ async function init() {
 
     // DM Panel event listeners
     $('#dm-panel-back-btn')?.addEventListener('click', () => showPage('home-page'));
-    $('#grant-party-level-btn')?.addEventListener('click', grantPartyLevel);
+    // Leveling mode toggle in DM panel
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('dm-leveling-btn')) {
+            toggleLevelingMode(e.target.dataset.mode);
+        }
+    });
 
     await loadCharacters();
     hideLoading();

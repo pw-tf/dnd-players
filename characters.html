@@ -466,27 +466,19 @@
 
             <main class="main-content">
                 <div class="dm-panel-content">
-                    <!-- Party-wide Level Up -->
+                    <!-- Leveling Mode Toggle -->
                     <section class="dm-section">
-                        <h2 class="dm-section-title">Party Level Management</h2>
-                        <p class="dm-section-desc">Grant a level to all characters in this game world at once.</p>
-                        <button id="grant-party-level-btn" class="btn-primary btn-large">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 5v14"/>
-                                <path d="M5 12h14"/>
-                            </svg>
-                            Grant Level to Entire Party
-                        </button>
-                    </section>
-
-                    <!-- Individual Character Management -->
-                    <section class="dm-section">
-                        <h2 class="dm-section-title">Individual Character Management</h2>
-                        <p class="dm-section-desc">Grant levels to specific characters.</p>
-                        <div id="dm-character-list" class="dm-character-list">
-                            <!-- Character list will be populated here -->
+                        <div class="dm-leveling-mode-row">
+                            <span class="dm-section-title" style="margin-bottom:0">Leveling Mode</span>
+                            <div class="dm-leveling-toggle" id="dm-leveling-toggle">
+                                <button type="button" class="dm-leveling-btn active" data-mode="milestone">Milestone</button>
+                                <button type="button" class="dm-leveling-btn" data-mode="exp">EXP</button>
+                            </div>
                         </div>
                     </section>
+
+                    <!-- Dynamic content rendered by renderDMPanel() -->
+                    <div id="dm-panel-dynamic"></div>
                 </div>
             </main>
         </div>

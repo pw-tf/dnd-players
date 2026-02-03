@@ -99,6 +99,7 @@ CREATE TABLE public.game_worlds (
   player_pin_hash text NOT NULL,
   is_active boolean DEFAULT true,
   description text,
+  leveling_mode text DEFAULT 'milestone',
   CONSTRAINT game_worlds_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.inventory_items (

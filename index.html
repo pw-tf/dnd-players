@@ -74,7 +74,17 @@
                         <label for="world-description">Description (Optional)</label>
                         <textarea id="world-description" rows="3" placeholder="Describe your game world..."></textarea>
                     </div>
-                    
+
+                    <div class="form-group">
+                        <label>Leveling Mode</label>
+                        <div class="leveling-mode-toggle">
+                            <button type="button" class="leveling-mode-btn active" data-mode="milestone">Milestone</button>
+                            <button type="button" class="leveling-mode-btn" data-mode="exp">EXP</button>
+                        </div>
+                        <input type="hidden" id="leveling-mode-value" value="milestone">
+                        <p class="leveling-mode-desc" id="leveling-mode-desc">DM grants levels directly to characters.</p>
+                    </div>
+
                     <div class="form-group">
                         <label id="pin-text">DM 4-Digit PIN</label>
                         <div class="pin-inputs">

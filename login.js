@@ -194,6 +194,27 @@ function setupTabs() {
 }
 
 // ========================================
+// Leveling Mode Toggle
+// ========================================
+function setupLevelingModeToggle() {
+    const descriptions = {
+        milestone: 'DM grants levels directly to characters.',
+        exp: 'DM grants EXP. Characters auto-level at 5e thresholds.'
+    };
+    $$('.leveling-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            $$('.leveling-mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const mode = btn.dataset.mode;
+            const hidden = $('#leveling-mode-value');
+            if (hidden) hidden.value = mode;
+            const desc = $('#leveling-mode-desc');
+            if (desc) desc.textContent = descriptions[mode];
+        });
+    });
+}
+
+// ========================================
 // Remember Me Checkbox
 // ========================================
 function setupRememberMe() {
@@ -305,6 +326,8 @@ async function handleCreateSubmit(e) {
     const description = descriptionInput ? descriptionInput.value.trim() : '';
     const dmPin = updateHiddenPIN('create-dm');
     const playerPin = updateHiddenPIN('create-player');
+    const levelingModeInput = $('#leveling-mode-value');
+    const levelingMode = levelingModeInput ? levelingModeInput.value : 'milestone';
     const rememberCreate = $('#remember-create');
     const remember = rememberCreate ? rememberCreate.classList.contains('checked') : false;
     
@@ -352,7 +375,8 @@ async function handleCreateSubmit(e) {
                 name: worldName,
                 description: description || null,
                 dm_pin_hash: dmPinHash,
-                player_pin_hash: playerPinHash
+                player_pin_hash: playerPinHash,
+                leveling_mode: levelingMode
             })
             .select()
             .single();
@@ -421,6 +445,7 @@ function initLogin() {
     setupPINInputs();
     setupTabs();
     setupRememberMe();
+    setupLevelingModeToggle();
     
     // Form submissions
     const joinForm = $('#join-form');
