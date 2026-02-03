@@ -2173,6 +2173,69 @@ body::before {
     flex: 1;
 }
 
+/* Starting Equipment Modal */
+.starting-equipment-modal {
+    max-width: 450px;
+}
+
+.starting-equipment-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
+.starting-equipment-option {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    padding: var(--space-lg);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+    width: 100%;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+}
+
+.starting-equipment-option:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-hover);
+}
+
+.starting-equipment-option:active {
+    transform: scale(0.98);
+}
+
+.starting-equipment-option .option-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    color: var(--accent-primary);
+}
+
+.starting-equipment-option .option-content h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+    color: var(--text-primary);
+}
+
+.starting-equipment-option .option-content p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
 #add-modal-fields {
     display: flex;
     flex-direction: column;
