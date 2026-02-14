@@ -1459,12 +1459,18 @@ window.takeLongRest = async function() {
     const slots = c.spell_slots || [];
     const updatedSlots = slots.map(s => ({ ...s, used: 0 }));
     
+    // Restore hit dice (half of total, minimum 1)
+    const totalHitDice = c.level;
+    const regainedHD = Math.max(1, Math.floor(totalHitDice / 2));
+    const newHitDiceRemaining = Math.min(totalHitDice, (c.hit_dice_remaining || 0) + regainedHD);
+
     // Reset death saves
     const updates = {
         current_hit_points: newHP,
         temporary_hit_points: 0,
         death_save_successes: 0,
-        death_save_failures: 0
+        death_save_failures: 0,
+        hit_dice_remaining: newHitDiceRemaining
     };
     
     // Optimistic update
@@ -1573,10 +1579,10 @@ function renderSkillsTab() {
     // Calculate all skill modifiers to find top 2
     const skillMods = Object.entries(SKILLS).map(([name, ab]) => {
         const skill = c.skills?.find(s => s.skill_name === name);
-        const mod = getModifier(getAbilityScore(abs, ab)) + (skill?.proficient ? profBonus : 0);
+        const mod = getModifier(getAbilityScore(abs, ab)) + (skill?.proficient ? profBonus : 0) + (skill?.expertise ? profBonus : 0);
         return { name, mod };
     });
-    
+
     // Sort by modifier descending and get top 2 skill names
     const sortedSkills = [...skillMods].sort((a, b) => b.mod - a.mod);
     const topSkills = new Set([sortedSkills[0]?.name, sortedSkills[1]?.name]);
@@ -1585,7 +1591,7 @@ function renderSkillsTab() {
         <div class="skills-list">
             ${Object.entries(SKILLS).map(([name, ab]) => {
                 const skill = c.skills?.find(s => s.skill_name === name);
-                const mod = getModifier(getAbilityScore(abs, ab)) + (skill?.proficient ? profBonus : 0);
+                const mod = getModifier(getAbilityScore(abs, ab)) + (skill?.proficient ? profBonus : 0) + (skill?.expertise ? profBonus : 0);
                 const isTopSkill = topSkills.has(name);
                 return `<div class="skill-row ${skill?.proficient ? 'proficient' : ''}" onclick="toggleSkillProficiency('${skill?.id}', ${skill?.proficient || false})">
                     <div class="skill-info">
@@ -1626,16 +1632,13 @@ function renderActionsTab() {
     const slots = c.spell_slots || [];
     const features = c.features_traits || [];
 
-    // Filter features that are bonus actions (those with is_bonus_action flag or "bonus action" in description)
-    const bonusActionFeatures = features.filter(f =>
-        f.is_bonus_action ||
-        (f.description && f.description.toLowerCase().includes('bonus action'))
-    );
+    // Filter features that are bonus actions (explicitly flagged only)
+    const bonusActionFeatures = features.filter(f => f.is_bonus_action);
 
-    // Filter features that are regular actions (not bonus actions)
+    // Filter features that are usable actions (have limited uses, but not bonus actions)
     const regularActionFeatures = features.filter(f =>
         !f.is_bonus_action &&
-        !(f.description && f.description.toLowerCase().includes('bonus action'))
+        f.uses_total && f.uses_total > 0
     );
 
     const groupedSpells = spells.reduce((acc, s) => { (acc[s.level] = acc[s.level] || []).push(s); return acc; }, {});
@@ -3766,7 +3769,9 @@ async function renderHPStep() {
     const char = currentCharacter;
     const conMod = getModifier(getAbilityScore(char.ability_scores, 'con'));
     const hitDie = HIT_DICE[char.class] || 8;
-    const average = Math.floor(hitDie / 2) + 1 + conMod;
+    const hasTough = (char.features_traits || []).some(f => f.name === 'Tough');
+    const toughBonus = hasTough ? 2 : 0;
+    const average = Math.floor(hitDie / 2) + 1 + conMod + toughBonus;
 
     return `
         <h3>Hit Points</h3>
@@ -3777,7 +3782,7 @@ async function renderHPStep() {
                 <input type="radio" name="hp-choice" value="average" id="hp-average">
                 <label for="hp-average">
                     <div class="hp-choice-title">Take Average</div>
-                    <div class="hp-choice-value">+${average} HP</div>
+                    <div class="hp-choice-value">+${average} HP${hasTough ? ' (includes Tough)' : ''}</div>
                     <div class="hp-choice-desc">Consistent and reliable</div>
                 </label>
             </div>
@@ -3786,7 +3791,7 @@ async function renderHPStep() {
                 <input type="radio" name="hp-choice" value="roll" id="hp-roll">
                 <label for="hp-roll">
                     <div class="hp-choice-title">Roll for HP</div>
-                    <div class="hp-choice-value">1d${hitDie} + ${conMod}</div>
+                    <div class="hp-choice-value">1d${hitDie} + ${conMod}${hasTough ? ' + 2 (Tough)' : ''}</div>
                     <div class="hp-choice-desc">Take a chance!</div>
                 </label>
             </div>
@@ -3817,7 +3822,8 @@ window.selectHPOption = function(option) {
         const char = currentCharacter;
         const conMod = getModifier(getAbilityScore(char.ability_scores, 'con'));
         const hitDie = HIT_DICE[char.class] || 8;
-        state.changes.hp = Math.floor(hitDie / 2) + 1 + conMod;
+        const hasTough = (char.features_traits || []).some(f => f.name === 'Tough');
+        state.changes.hp = Math.floor(hitDie / 2) + 1 + conMod + (hasTough ? 2 : 0);
     }
 };
 
@@ -3833,13 +3839,15 @@ window.applyHPRoll = function() {
         return;
     }
 
-    const total = roll + conMod;
+    const hasTough = (char.features_traits || []).some(f => f.name === 'Tough');
+    const toughBonus = hasTough ? 2 : 0;
+    const total = roll + conMod + toughBonus;
     window.levelUpState.changes.hp = total;
 
     $('#hp-roll-display').innerHTML = `
         <div class="roll-animation">
             <div class="roll-result">${roll}</div>
-            <div class="roll-modifier">+ ${conMod} (CON)</div>
+            <div class="roll-modifier">+ ${conMod} (CON)${hasTough ? ' + 2 (Tough)' : ''}</div>
             <div class="roll-total">= ${total} HP</div>
         </div>
     `;
@@ -4166,7 +4174,12 @@ async function saveFeatureFromAPI(charId, feature, source) {
                 }
             }
 
-            if (descLower.includes('bonus action')) {
+            // Detect bonus action features - look for patterns indicating this IS a bonus action,
+            // not just features that mention bonus actions in passing
+            if (/\bas a bonus action\b/.test(descLower) ||
+                /\byou can.*use a bonus action\b/.test(descLower) ||
+                /\byou can.*take a bonus action\b/.test(descLower) ||
+                /\busing a bonus action\b/.test(descLower)) {
                 isBonusAction = true;
             }
         }
@@ -4263,12 +4276,29 @@ async function completeLevelUp() {
     // Save Feat choice as a feature/trait
     if (changes.asiChoice === 'feat' && changes.featChoice) {
         const feat = FEATS.find(f => f.name === changes.featChoice);
+        const featDesc = feat ? feat.description : '';
+
+        // Detect if this feat grants a bonus action ability
+        const isBonusAction = featDesc.toLowerCase().includes('bonus action');
+
         await db.from('features_traits').insert({
             character_id: char.id,
             name: changes.featChoice,
-            description: feat ? feat.description : '',
-            source: `Feat (Level ${char.level})`
+            description: featDesc,
+            source: `Feat (Level ${char.level})`,
+            is_bonus_action: isBonusAction
         });
+
+        // Tough feat: retroactively add +2 HP per character level
+        if (changes.featChoice === 'Tough') {
+            const toughHP = 2 * char.level;
+            await db.from('characters').update({
+                hit_point_maximum: (char.hit_point_maximum + (changes.hp || 0)) + toughHP,
+                current_hit_points: (char.current_hit_points + (changes.hp || 0)) + toughHP
+            }).eq('id', char.id);
+            // Clear HP change so it isn't double-applied (already included above)
+            changes.hp = null;
+        }
     }
 
     // Save class features from this level
