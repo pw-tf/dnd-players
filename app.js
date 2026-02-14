@@ -1346,7 +1346,7 @@ function renderStatsTab() {
                 ` : `
                     <div class="combat-stat"><span class="value">${c.armor_class}</span><span class="label">AC</span></div>
                     <div class="combat-stat"><span class="value">${formatMod(c.initiative_bonus)}</span><span class="label">Initiative</span></div>
-                    <div class="combat-stat"><span class="value">${c.speed}</span><span class="label">Speed</span></div>
+                    <div class="combat-stat"><span class="value">${parseInt(c.speed) || 30}</span><span class="label">Speed</span></div>
                     <div class="combat-stat"><span class="value">${formatMod(profBonus)}</span><span class="label">Prof</span></div>
                 `}
             </div>
@@ -1411,8 +1411,9 @@ window.saveStatsEdit = async function() {
 
     // Read combat stat inputs
     const newAC = parseInt($('#edit-ac')?.value) || c.armor_class;
-    const newInit = parseInt($('#edit-initiative')?.value) ?? c.initiative_bonus;
-    const newSpeed = $('#edit-speed')?.value ? `${parseInt($('#edit-speed').value)} ft.` : c.speed;
+    const initVal = parseInt($('#edit-initiative')?.value);
+    const newInit = isNaN(initVal) ? c.initiative_bonus : initVal;
+    const newSpeed = parseInt($('#edit-speed')?.value) || parseInt(c.speed) || 30;
     const newHPMax = parseInt($('#edit-hpmax')?.value) || c.hit_point_maximum;
 
     // Update ability scores in DB

@@ -1422,8 +1422,9 @@ body::before {
 
 /* Stats Edit Mode */
 .stat-edit-input {
-    width: 60px;
-    padding: 4px;
+    width: 100%;
+    max-width: 56px;
+    padding: 2px 4px;
     text-align: center;
     font-size: 18px;
     font-weight: 700;
@@ -1432,6 +1433,14 @@ body::before {
     color: var(--text-primary);
     border: 1px solid var(--accent);
     border-radius: var(--radius-sm);
+    box-sizing: border-box;
+    -moz-appearance: textfield;
+}
+
+.stat-edit-input::-webkit-inner-spin-button,
+.stat-edit-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .stat-edit-input:focus {
@@ -1443,6 +1452,11 @@ body::before {
 .ability-score-box.editing,
 .combat-stat.editing {
     border-color: var(--accent);
+}
+
+.ability-score-box.editing .stat-edit-input {
+    max-width: 48px;
+    font-size: 16px;
 }
 
 .stats-edit-actions {
