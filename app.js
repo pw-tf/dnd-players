@@ -4186,6 +4186,68 @@ async function completeLevelUp() {
         });
     }
 
+    // Save class features from this level
+    const classFeatures = state.classData.features || [];
+    for (const feature of classFeatures) {
+        // Check if this feature already exists for the character
+        const { data: existing } = await db.from('features_traits')
+            .select('id')
+            .eq('character_id', char.id)
+            .eq('name', feature.name)
+            .maybeSingle();
+
+        if (!existing) {
+            // Fetch full feature details from API
+            let description = '';
+            let usesTotal = null;
+            let usesPerRest = null;
+            let isBonusAction = false;
+            try {
+                const featureResp = await fetch(`${DND_API_BASE}/features/${feature.index}`);
+                if (featureResp.ok) {
+                    const featureData = await featureResp.json();
+                    description = Array.isArray(featureData.desc) ? featureData.desc.join('\n\n') : (featureData.desc || '');
+
+                    // Detect limited-use features from name pattern like "(1 use)" or "(2 uses)"
+                    const useMatch = feature.name.match(/\((\d+)\s+uses?\)/i);
+                    if (useMatch) {
+                        usesTotal = parseInt(useMatch[1], 10);
+                    }
+
+                    // Detect rest type from description
+                    const descLower = description.toLowerCase();
+                    if (usesTotal) {
+                        if (descLower.includes('short or long rest')) {
+                            usesPerRest = 'short_or_long';
+                        } else if (descLower.includes('short rest')) {
+                            usesPerRest = 'short';
+                        } else if (descLower.includes('long rest')) {
+                            usesPerRest = 'long';
+                        }
+                    }
+
+                    // Detect bonus action features
+                    if (descLower.includes('bonus action')) {
+                        isBonusAction = true;
+                    }
+                }
+            } catch (e) {
+                // If API fetch fails, still save the feature with its name
+            }
+
+            await db.from('features_traits').insert({
+                character_id: char.id,
+                name: feature.name,
+                description: description,
+                source: `Class Feature (${char.class} Level ${char.level})`,
+                uses_total: usesTotal,
+                uses_remaining: usesTotal,
+                uses_per_rest: usesPerRest,
+                is_bonus_action: isBonusAction
+            });
+        }
+    }
+
     // Update Subclass
     if (changes.subclass) {
         await db.from('characters').update({ subclass: changes.subclass }).eq('id', char.id);
