@@ -344,4 +344,189 @@
                 <button class="tab-btn" data-tab="inventory">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    <span>Inventory</span>
+                </button>
+                <button class="tab-btn" data-tab="notes">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    <span>Notes</span>
+                </button>
+                <button class="tab-btn" data-tab="tools">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <span>Tools</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="delete-modal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <h2>Delete Character?</h2>
+                <p>This action cannot be undone. Are you sure you want to delete <strong id="delete-char-name"></strong>?</p>
+                <div class="modal-actions">
+                    <button id="cancel-delete-btn" class="btn-secondary">Cancel</button>
+                    <button id="confirm-delete-btn" class="btn-danger">Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Item Modal -->
+        <div id="add-item-modal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <h2 id="add-modal-title">Add Item</h2>
+                <form id="add-item-form">
+                    <div id="add-modal-fields">
+                        <!-- Fields will be populated dynamically -->
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-add-btn" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Level Editor Modal -->
+        <div id="level-modal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <h2>Level Up Character</h2>
+                <p>Changing the level will automatically update proficiency bonus and hit dice.</p>
+                <form id="level-form">
+                    <div class="form-group">
+                        <label>New Level (1-20)</label>
+                        <input type="number" id="new-level" min="1" max="20" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="cancel-level-btn" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary">Update Level</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Level-Up Wizard Modal -->
+        <div id="levelup-wizard-modal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content levelup-wizard">
+                <div class="levelup-header">
+                    <h2 id="levelup-wizard-title">Level Up!</h2>
+                    <button class="icon-btn" onclick="closeLevelUpWizard()" title="Close">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="levelup-progress">
+                    <div class="levelup-progress-bar-container">
+                        <div id="levelup-progress-bar" class="levelup-progress-bar"></div>
+                    </div>
+                    <div id="levelup-progress-text" class="levelup-progress-text">Step 1 of 5</div>
+                </div>
+
+                <div id="levelup-step-content" class="levelup-step-content">
+                    <!-- Step content will be rendered here -->
+                </div>
+
+                <div class="levelup-nav">
+                    <button id="levelup-prev-btn" class="btn-secondary" onclick="levelUpPrev()">Previous</button>
+                    <button id="levelup-next-btn" class="btn-primary" onclick="levelUpNext()">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Starting Equipment Modal -->
+        <div id="starting-equipment-modal" class="modal hidden">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content starting-equipment-modal">
+                <h2>Starting Equipment</h2>
+                <p>Your character has been created! Choose how to start:</p>
+
+                <div class="starting-equipment-options">
+                    <button id="start-blank-btn" class="starting-equipment-option">
+                        <div class="option-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            </svg>
+                        </div>
+                        <div class="option-content">
+                            <h3>Start Blank</h3>
+                            <p>No starting equipment or gold. Add items manually later.</p>
+                        </div>
+                    </button>
+
+                    <button id="start-equipped-btn" class="starting-equipment-option">
+                        <div class="option-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                                <line x1="3" y1="6" x2="21" y2="6"/>
+                                <path d="M16 10a4 4 0 0 1-8 0"/>
+                            </svg>
+                        </div>
+                        <div class="option-content">
+                            <h3>Default Starting Equipment</h3>
+                            <p id="equipment-summary">Class + Background gear, weapons, and gold.</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DM Panel Page -->
+        <div id="dm-panel-page" class="page hidden">
+            <header class="header">
+                <div class="header-content">
+                    <button id="dm-panel-back-btn" class="icon-btn" title="Back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H5"/>
+                            <path d="M12 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+                    <h1 class="header-title">DM Panel</h1>
+                    <div style="width: 36px;"></div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="dm-panel-content">
+                    <!-- Leveling Mode Toggle -->
+                    <section class="dm-section">
+                        <div class="dm-leveling-mode-row">
+                            <span class="dm-section-title" style="margin-bottom:0">Leveling Mode</span>
+                            <div class="dm-leveling-toggle" id="dm-leveling-toggle">
+                                <button type="button" class="dm-leveling-btn active" data-mode="milestone">Milestone</button>
+                                <button type="button" class="dm-leveling-btn" data-mode="exp">EXP</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Dynamic content rendered by renderDMPanel() -->
+                    <div id="dm-panel-dynamic"></div>
+                </div>
+            </main>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script src="feature-registry.js"></script>
+    <script src="level-up-engine.js"></script>
+    <script src="sidemenu.js"></script>
+</body>
+</html>
                       
