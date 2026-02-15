@@ -915,17 +915,6 @@ function initCreatePage() {
     
     // Initialize HP field on page load
     updateHPField();
-
-    // Level-Up Engine: Show racial bonus preview under race dropdown
-    if (window.LevelUpEngine) {
-        LevelUpEngine.initRacialBonusPreview();
-        // Auto-update speed based on race selection
-        $('#char-race').addEventListener('change', () => {
-            const race = $('#char-race').value;
-            const raceSpeed = LevelUpEngine.RACIAL_SPEED[race] || 30;
-            $('#char-speed').value = raceSpeed;
-        });
-    }
 }
 
 function updateHPField() {
@@ -982,20 +971,6 @@ async function handleCreate(e) {
     await db.from('saving_throws').insert(ABILITIES.map(a => ({ character_id: id, ability: a, proficient: false })));
     await db.from('currency').insert({ character_id: id, copper: 0, silver: 0, electrum: 0, gold: 0, platinum: 0 });
     await db.from('character_details').insert({ character_id: id });
-
-    // Level-Up Engine: Apply racial bonuses, class saving throws, correct speed & HP
-    if (window.LevelUpEngine) {
-        let halfElfChoices = [];
-        if (race === 'Half-Elf') {
-            halfElfChoices = await LevelUpEngine.showHalfElfAbilityChoice();
-        }
-        await LevelUpEngine.enhanceCharacterCreation(id, {
-            race, class: cls, level
-        }, {
-            strength: abs.str, dexterity: abs.dex, constitution: abs.con,
-            intelligence: abs.int, wisdom: abs.wis, charisma: abs.cha
-        }, halfElfChoices);
-    }
 
     $('#create-form').reset();
     ABILITIES.forEach(a => $(`#mod-${a}`).textContent = '+0');
@@ -1064,7 +1039,7 @@ function setupRealtime(id) {
     );
     
     // Listen to all related tables
-    const relatedTables = ['ability_scores', 'skills', 'saving_throws', 'inventory_items', 'weapons', 'spells', 'spell_slots', 'features_traits', 'currency', 'character_details', 'character_effects'];
+    const relatedTables = ['ability_scores', 'skills', 'saving_throws', 'inventory_items', 'weapons', 'spells', 'spell_slots', 'features_traits', 'currency', 'character_details'];
     
     relatedTables.forEach(table => {
         channel.on(
@@ -4441,8 +4416,41 @@ window.closeLevelUpWizard = function() {
     }
 };
 
+// Scaling features: maps a base name to a regex that matches all versions.
+// When a higher version arrives, the existing row is UPDATED instead of duplicated.
+const SCALING_FEATURES = {
+    'Extra Attack':   /^Extra Attack(\s*\(\d+\))?$/i,
+    'Action Surge':   /^Action Surge\s*\(\d+\s+uses?\)/i,
+    'Indomitable':    /^Indomitable\s*\(\d+\s+uses?\)/i,
+    'Brutal Critical': /^Brutal Critical\s*\(\d+\s+di(ce|e)\)/i,
+    'Channel Divinity': /^Channel Divinity\s*\(\d+\/rest\)/i,
+    'Song of Rest':   /^Song of Rest\s*\(d\d+\)/i,
+    'Bardic Inspiration': /^Bardic Inspiration\s*\(d\d+\)/i,
+    'Unarmored Movement': /^Unarmored Movement\s*(\+\d+)?/i,
+    'Destroy Undead':  /^Destroy Undead\s*\(/i,
+    'Wild Shape Improvement': /^Wild Shape\s*\(/i,
+    'Sneak Attack':   /^Sneak Attack\s*\(\d+d6\)/i,
+};
+
+// Helper: Check if a feature name matches any scaling feature pattern
+// Returns the existing row to update, or null
+async function findScalingPredecessor(charId, featureName) {
+    for (const [baseName, pattern] of Object.entries(SCALING_FEATURES)) {
+        if (!pattern.test(featureName)) continue;
+        // This feature is a scaling type — look for any existing version
+        const { data: allFeatures } = await db.from('features_traits')
+            .select('id, name')
+            .eq('character_id', charId);
+        if (!allFeatures) return null;
+        const predecessor = allFeatures.find(f => pattern.test(f.name) && f.name !== featureName);
+        return predecessor || null;
+    }
+    return null;
+}
+
 // Helper: Fetch feature details from API and save to features_traits
 async function saveFeatureFromAPI(charId, feature, source) {
+    // Exact duplicate check — skip if already saved with this exact name
     const { data: existing } = await db.from('features_traits')
         .select('id')
         .eq('character_id', charId)
@@ -4489,6 +4497,22 @@ async function saveFeatureFromAPI(charId, feature, source) {
         }
     } catch (e) {
         // If API fetch fails, save with name only
+    }
+
+    // Check if this is a scaling feature that should upgrade an existing row
+    const predecessor = await findScalingPredecessor(charId, feature.name);
+    if (predecessor) {
+        // Upgrade the existing row: update name, description, uses, and source
+        await db.from('features_traits').update({
+            name: feature.name,
+            description,
+            source,
+            uses_total: usesTotal,
+            uses_remaining: usesTotal,
+            uses_per_rest: usesPerRest,
+            is_bonus_action: isBonusAction
+        }).eq('id', predecessor.id);
+        return;
     }
 
     await db.from('features_traits').insert({
@@ -4660,49 +4684,6 @@ async function completeLevelUp() {
     const targetClassData = state.classDataByLevel[targetLevel];
     if (targetClassData?.spellcasting) {
         await updateSpellSlots(char.id, targetClassData.spellcasting);
-    }
-
-    // 10. Level-Up Engine: Apply mechanical effects from features, ASIs, feats
-    if (window.LevelUpEngine) {
-        // Collect features gained across all levels
-        const newFeatures = [];
-        for (const lvl of state.levelsToProcess) {
-            const classData = state.classDataByLevel[lvl];
-            if (classData && classData.features) {
-                for (const feature of classData.features) {
-                    newFeatures.push({
-                        apiIndex: feature.index,
-                        name: feature.name,
-                        source: `Class Feature (${char.class} Level ${lvl})`
-                    });
-                }
-            }
-        }
-
-        // Collect ASI choices (from last ASI level processed)
-        let asiChoicesForEngine = null;
-        for (const asiEntry of changes.asiByLevel) {
-            if (asiEntry.asiChoice !== 'feat' && asiEntry.asiAbilities) {
-                // Convert {str: 2} or {dex: 1, wis: 1} to full ability names
-                asiChoicesForEngine = {};
-                for (const [shortKey, val] of Object.entries(asiEntry.asiAbilities)) {
-                    if (val > 0) {
-                        const fullKey = ABILITY_FULL[shortKey]?.toLowerCase() || shortKey;
-                        asiChoicesForEngine[fullKey] = val;
-                    }
-                }
-            }
-        }
-
-        // Check if a feat was chosen
-        let featChosen = null;
-        for (const asiEntry of changes.asiByLevel) {
-            if (asiEntry.asiChoice === 'feat' && asiEntry.featChoice) {
-                featChosen = asiEntry.featChoice.toLowerCase().replace(/\s+/g, '-');
-            }
-        }
-
-        await LevelUpEngine.enhanceLevelUpCompletion(char.id, newFeatures, asiChoicesForEngine, featChosen);
     }
 
     // Reload character

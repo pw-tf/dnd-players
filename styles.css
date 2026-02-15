@@ -3129,6 +3129,7 @@ body::before {
 .levelup-step-content {
     min-height: 300px;
     margin-bottom: var(--space-xl);
+    overflow-x: hidden;
 }
 
 .levelup-step-content h3 {
@@ -3354,8 +3355,9 @@ body::before {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
-    padding: var(--space-md);
+    padding: var(--space-sm) var(--space-xs);
     text-align: center;
+    min-width: 0;
 }
 
 .asi-ability-name {
@@ -3363,6 +3365,9 @@ body::before {
     font-weight: 600;
     color: var(--text-tertiary);
     margin-bottom: var(--space-xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .asi-ability-score {
@@ -3375,7 +3380,7 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-sm);
+    gap: 2px;
 }
 
 .asi-btn {
