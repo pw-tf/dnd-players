@@ -3858,7 +3858,7 @@ window.openLevelUpWizard = async function() {
             // HP: one entry per level { level: N, hp: amount, method: 'average'|'roll' }
             hpByLevel: levelsToProcess.map(lvl => ({ level: lvl, hp: null, method: null })),
             // ASI: one entry per ASI level { level: N, asiChoice: 'asi'|'feat', asiAbilities: {}, featChoice: null }
-            asiByLevel: asiLevels.map(lvl => ({ level: lvl, asiChoice: null, asiAbilities: {}, featChoice: null })),
+            asiByLevel: asiLevels.map(lvl => ({ level: lvl, asiChoice: null, asiAbilities: {}, featChoice: null, featAbilityChoice: null })),
             subclass: null,
             spells: []
         }
@@ -4187,7 +4187,56 @@ window.adjustASI = function(ability, delta, asiIndex) {
 window.selectFeat = function(featName, asiIndex) {
     const state = window.levelUpState;
     state.changes.asiByLevel[asiIndex].featChoice = featName;
+    state.changes.asiByLevel[asiIndex].featAbilityChoice = null; // Reset any previous choice
     document.getElementById(`feat-${featName.replace(/\s/g, '-')}-${asiIndex}`).checked = true;
+
+    // Check if this feat requires an ability choice (Athlete, Resilient, etc.)
+    const featIndex = featName.toLowerCase().replace(/\s+/g, '-');
+    const featEffect = (window.FeatureRegistry && window.FeatureRegistry.FEAT_EFFECTS)
+        ? window.FeatureRegistry.FEAT_EFFECTS[featIndex] : null;
+
+    // Remove any existing ability choice picker
+    const existingPicker = document.getElementById(`feat-ability-picker-${asiIndex}`);
+    if (existingPicker) existingPicker.remove();
+
+    if (featEffect && featEffect.type === 'ability_choice') {
+        // Show inline ability choice picker below the feat list
+        const container = document.getElementById(`feat-tab-content-${asiIndex}`);
+        const picker = document.createElement('div');
+        picker.id = `feat-ability-picker-${asiIndex}`;
+        picker.className = 'feat-ability-picker';
+        picker.innerHTML = `
+            <p style="font-weight: 600; margin: 12px 0 8px; color: var(--accent-primary);">
+                ${featName}: Choose ability to increase by +${featEffect.bonus || 1}
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                ${featEffect.choices.map(ability => `
+                    <button class="feat-ability-option" 
+                        onclick="selectFeatAbility('${ability}', ${asiIndex})"
+                        style="padding: 8px 14px; background: var(--bg-tertiary); border: 2px solid var(--border-subtle); border-radius: var(--radius-md); cursor: pointer; text-transform: capitalize; font-weight: 500; color: var(--text-primary); transition: border-color 0.15s;">
+                        ${ability} +${featEffect.bonus || 1}
+                    </button>
+                `).join('')}
+            </div>
+        `;
+        container.appendChild(picker);
+    }
+};
+
+window.selectFeatAbility = function(ability, asiIndex) {
+    const state = window.levelUpState;
+    state.changes.asiByLevel[asiIndex].featAbilityChoice = ability;
+
+    // Highlight selected button
+    const picker = document.getElementById(`feat-ability-picker-${asiIndex}`);
+    if (picker) {
+        picker.querySelectorAll('.feat-ability-option').forEach(btn => {
+            btn.style.borderColor = btn.textContent.trim().toLowerCase().startsWith(ability)
+                ? 'var(--accent-primary)' : 'var(--border-subtle)';
+            btn.style.background = btn.textContent.trim().toLowerCase().startsWith(ability)
+                ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg-tertiary)';
+        });
+    }
 };
 
 // Step 3: Subclass Selection
@@ -4306,7 +4355,12 @@ async function renderFeatureStep() {
     const allFeats = [];
     for (const entry of state.changes.asiByLevel) {
         if (entry.asiChoice === 'feat' && entry.featChoice) {
-            allFeats.push(`${entry.featChoice} (Lvl ${entry.level})`);
+            let label = `${entry.featChoice} (Lvl ${entry.level})`;
+            if (entry.featAbilityChoice) {
+                const cap = entry.featAbilityChoice.charAt(0).toUpperCase() + entry.featAbilityChoice.slice(1, 3).toUpperCase();
+                label += ` → +1 ${cap}`;
+            }
+            allFeats.push(label);
         } else {
             const boosts = Object.entries(entry.asiAbilities).filter(([, v]) => v > 0);
             if (boosts.length) {
@@ -4603,6 +4657,41 @@ async function completeLevelUp() {
             // Tough feat: retroactively add +2 HP per target level
             if (asiEntry.featChoice === 'Tough') {
                 toughHPBonus += 2 * state.targetLevel;
+            }
+
+            // Apply feat ability score bonuses
+            if (abs) {
+                const featIndex = asiEntry.featChoice.toLowerCase().replace(/\s+/g, '-');
+                const featEffect = (window.FeatureRegistry && window.FeatureRegistry.FEAT_EFFECTS) 
+                    ? window.FeatureRegistry.FEAT_EFFECTS[featIndex] : null;
+
+                if (featEffect) {
+                    if (featEffect.type === 'ability_increase' && featEffect.increases) {
+                        // Fixed stat increases (Actor +1 CHA, Durable +1 CON, etc.)
+                        for (const [ability, amount] of Object.entries(featEffect.increases)) {
+                            if (abs[ability] !== undefined) {
+                                abs[ability] = Math.min(20, (abs[ability] || 10) + amount);
+                            }
+                        }
+                    } else if (featEffect.type === 'ability_choice' && asiEntry.featAbilityChoice) {
+                        // Player-chosen stat increase (Athlete: +1 STR or DEX, etc.)
+                        const chosenAbility = asiEntry.featAbilityChoice;
+                        if (abs[chosenAbility] !== undefined) {
+                            abs[chosenAbility] = Math.min(20, (abs[chosenAbility] || 10) + (featEffect.bonus || 1));
+                        }
+                    }
+
+                    // Apply speed bonus (Mobile feat: +10 speed)
+                    if (featEffect.type === 'passive_bonus' && featEffect.target === 'speed') {
+                        const { data: charData } = await db.from('characters')
+                            .select('speed').eq('id', char.id).single();
+                        if (charData) {
+                            await db.from('characters').update({
+                                speed: (charData.speed || 30) + (featEffect.value || 0)
+                            }).eq('id', char.id);
+                        }
+                    }
+                }
             }
         } else if (abs) {
             // Apply ASI ability score increases
